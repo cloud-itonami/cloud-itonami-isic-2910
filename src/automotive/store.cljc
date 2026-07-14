@@ -65,22 +65,37 @@
   {:vehicles
    {"vehicle-1" {:id "vehicle-1" :vehicle-name "Sakura Compact Sedan CS-04"
                   :emissions-deviation-actual 0.05 :emissions-deviation-min -0.10 :emissions-deviation-max 0.10
+                  :structural-deviation-actual 0.02 :structural-deviation-min -0.05 :structural-deviation-max 0.05
                   :eol-defect-unresolved? false
+                  :robotics-sim-verified? false :robotics-sim-record nil
                   :vehicle-dispatched? false :conformity-certified? false
                   :jurisdiction "JPN" :status :intake}
     "vehicle-2" {:id "vehicle-2" :vehicle-name "Atlantis Crossover CX-12"
                   :emissions-deviation-actual 0.05 :emissions-deviation-min -0.10 :emissions-deviation-max 0.10
+                  :structural-deviation-actual 0.02 :structural-deviation-min -0.05 :structural-deviation-max 0.05
                   :eol-defect-unresolved? false
+                  :robotics-sim-verified? false :robotics-sim-record nil
                   :vehicle-dispatched? false :conformity-certified? false
                   :jurisdiction "ATL" :status :intake}
     "vehicle-3" {:id "vehicle-3" :vehicle-name "鈴木コンパクトカー SC-07"
                   :emissions-deviation-actual 0.35 :emissions-deviation-min -0.10 :emissions-deviation-max 0.10
+                  :structural-deviation-actual 0.02 :structural-deviation-min -0.05 :structural-deviation-max 0.05
                   :eol-defect-unresolved? false
+                  :robotics-sim-verified? false :robotics-sim-record nil
                   :vehicle-dispatched? false :conformity-certified? false
                   :jurisdiction "JPN" :status :intake}
     "vehicle-4" {:id "vehicle-4" :vehicle-name "田中SUVモデル SV-03"
                   :emissions-deviation-actual 0.05 :emissions-deviation-min -0.10 :emissions-deviation-max 0.10
+                  :structural-deviation-actual 0.02 :structural-deviation-min -0.05 :structural-deviation-max 0.05
                   :eol-defect-unresolved? true
+                  :robotics-sim-verified? false :robotics-sim-record nil
+                  :vehicle-dispatched? false :conformity-certified? false
+                  :jurisdiction "JPN" :status :intake}
+    "vehicle-5" {:id "vehicle-5" :vehicle-name "佐藤ピックアップ PU-09"
+                  :emissions-deviation-actual 0.05 :emissions-deviation-min -0.10 :emissions-deviation-max 0.10
+                  :structural-deviation-actual 0.30 :structural-deviation-min -0.05 :structural-deviation-max 0.05
+                  :eol-defect-unresolved? false
+                  :robotics-sim-verified? true :robotics-sim-record nil
                   :vehicle-dispatched? false :conformity-certified? false
                   :jurisdiction "JPN" :status :intake}}})
 
@@ -193,7 +208,8 @@
 (defn- dec* [s] (when s (edn/read-string s)))
 
 (defn- vehicle->tx [{:keys [id vehicle-name emissions-deviation-actual emissions-deviation-min emissions-deviation-max
-                             eol-defect-unresolved?
+                             structural-deviation-actual structural-deviation-min structural-deviation-max
+                             eol-defect-unresolved? robotics-sim-verified? robotics-sim-record
                              vehicle-dispatched? conformity-certified?
                              jurisdiction status dispatch-number evidence-number]}]
   (cond-> {:vehicle/id id}
@@ -201,7 +217,12 @@
     emissions-deviation-actual                  (assoc :vehicle/emissions-deviation-actual emissions-deviation-actual)
     emissions-deviation-min                     (assoc :vehicle/emissions-deviation-min emissions-deviation-min)
     emissions-deviation-max                     (assoc :vehicle/emissions-deviation-max emissions-deviation-max)
+    structural-deviation-actual                 (assoc :vehicle/structural-deviation-actual structural-deviation-actual)
+    structural-deviation-min                    (assoc :vehicle/structural-deviation-min structural-deviation-min)
+    structural-deviation-max                    (assoc :vehicle/structural-deviation-max structural-deviation-max)
     (some? eol-defect-unresolved?)              (assoc :vehicle/eol-defect-unresolved? eol-defect-unresolved?)
+    (some? robotics-sim-verified?)               (assoc :vehicle/robotics-sim-verified? robotics-sim-verified?)
+    (some? robotics-sim-record)                  (assoc :vehicle/robotics-sim-record (enc robotics-sim-record))
     (some? vehicle-dispatched?)                 (assoc :vehicle/vehicle-dispatched? vehicle-dispatched?)
     (some? conformity-certified?)               (assoc :vehicle/conformity-certified? conformity-certified?)
     jurisdiction                                (assoc :vehicle/jurisdiction jurisdiction)
@@ -212,7 +233,9 @@
 (def ^:private vehicle-pull
   [:vehicle/id :vehicle/vehicle-name :vehicle/emissions-deviation-actual
    :vehicle/emissions-deviation-min :vehicle/emissions-deviation-max
-   :vehicle/eol-defect-unresolved? :vehicle/vehicle-dispatched? :vehicle/conformity-certified?
+   :vehicle/structural-deviation-actual :vehicle/structural-deviation-min :vehicle/structural-deviation-max
+   :vehicle/eol-defect-unresolved? :vehicle/robotics-sim-verified? :vehicle/robotics-sim-record
+   :vehicle/vehicle-dispatched? :vehicle/conformity-certified?
    :vehicle/jurisdiction :vehicle/status :vehicle/dispatch-number :vehicle/evidence-number])
 
 (defn- pull->vehicle [m]
@@ -221,7 +244,12 @@
      :emissions-deviation-actual (:vehicle/emissions-deviation-actual m)
      :emissions-deviation-min (:vehicle/emissions-deviation-min m)
      :emissions-deviation-max (:vehicle/emissions-deviation-max m)
+     :structural-deviation-actual (:vehicle/structural-deviation-actual m)
+     :structural-deviation-min (:vehicle/structural-deviation-min m)
+     :structural-deviation-max (:vehicle/structural-deviation-max m)
      :eol-defect-unresolved? (boolean (:vehicle/eol-defect-unresolved? m))
+     :robotics-sim-verified? (boolean (:vehicle/robotics-sim-verified? m))
+     :robotics-sim-record (dec* (:vehicle/robotics-sim-record m))
      :vehicle-dispatched? (boolean (:vehicle/vehicle-dispatched? m))
      :conformity-certified? (boolean (:vehicle/conformity-certified? m))
      :jurisdiction (:vehicle/jurisdiction m) :status (:vehicle/status m)

@@ -24,6 +24,17 @@
       (is (not (contains? auto :end-of-line-quality/screen))
           (str "phase " n " must not auto-commit :end-of-line-quality/screen")))))
 
+(deftest robotics-simulate-assembly-line-never-auto-at-any-phase
+  (testing "the robot CAE/assembly-line verification mission carries no direct capital risk, but is still never auto-eligible, matching every sibling verification op in this fleet"
+    (doseq [[n {:keys [auto]}] phase/phases]
+      (is (not (contains? auto :robotics/simulate-assembly-line))
+          (str "phase " n " must not auto-commit :robotics/simulate-assembly-line")))))
+
+(deftest robotics-simulate-assembly-line-enabled-from-phase-2
+  (is (contains? (:writes (get phase/phases 2)) :robotics/simulate-assembly-line))
+  (is (contains? (:writes (get phase/phases 3)) :robotics/simulate-assembly-line))
+  (is (not (contains? (:writes (get phase/phases 1)) :robotics/simulate-assembly-line))))
+
 (deftest phase-0-is-fully-read-only
   (is (empty? (:writes (get phase/phases 0)))))
 

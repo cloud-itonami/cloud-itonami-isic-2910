@@ -22,9 +22,12 @@
       (is (false? (:eol-defect-unresolved? (store/vehicle s "vehicle-1"))))
       (is (= 0.35 (:emissions-deviation-actual (store/vehicle s "vehicle-3"))))
       (is (true? (:eol-defect-unresolved? (store/vehicle s "vehicle-4"))))
+      (is (false? (:robotics-sim-verified? (store/vehicle s "vehicle-1"))) "no robotics mission has run yet")
+      (is (true? (:robotics-sim-verified? (store/vehicle s "vehicle-5"))) "seeded as already-on-file")
+      (is (= 0.30 (:structural-deviation-actual (store/vehicle s "vehicle-5"))))
       (is (false? (:vehicle-dispatched? (store/vehicle s "vehicle-1"))))
       (is (false? (:conformity-certified? (store/vehicle s "vehicle-1"))))
-      (is (= ["vehicle-1" "vehicle-2" "vehicle-3" "vehicle-4"]
+      (is (= ["vehicle-1" "vehicle-2" "vehicle-3" "vehicle-4" "vehicle-5"]
              (mapv :id (store/all-vehicles s))))
       (is (nil? (store/eol-screen-of s "vehicle-1")))
       (is (nil? (store/requirements-verification-of s "vehicle-1")))
@@ -44,6 +47,13 @@
                                  :value {:id "vehicle-1" :vehicle-name "Sakura Compact Sedan CS-04"}})
         (is (= "Sakura Compact Sedan CS-04" (:vehicle-name (store/vehicle s "vehicle-1"))))
         (is (= 0.05 (:emissions-deviation-actual (store/vehicle s "vehicle-1"))) "unrelated field preserved"))
+      (testing "robotics-sim result commits via :vehicle/upsert and reads back"
+        (store/commit-record! s {:effect :vehicle/upsert
+                                 :value {:id "vehicle-1" :robotics-sim-verified? true
+                                        :robotics-sim-record {:mission-id "m-1" :passed? true}}})
+        (is (true? (:robotics-sim-verified? (store/vehicle s "vehicle-1"))))
+        (is (= {:mission-id "m-1" :passed? true} (:robotics-sim-record (store/vehicle s "vehicle-1"))))
+        (is (= 0.05 (:emissions-deviation-actual (store/vehicle s "vehicle-1"))) "unrelated field still preserved"))
       (testing "verification / EOL-screen payloads commit and read back"
         (store/commit-record! s {:effect :verification/set :path ["vehicle-1"]
                                  :payload {:jurisdiction "JPN" :checklist ["a" "b"]}})

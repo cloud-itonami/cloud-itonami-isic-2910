@@ -7,7 +7,9 @@
  ;; paths only resolve inside the monorepo checkout — a standalone fork
  ;; should override them with git coordinates.
  :deps {io.github.kotoba-lang/langgraph
-        {:local/root "../../kotoba-lang/langgraph"}}
+        {:local/root "../../kotoba-lang/langgraph"}
+        io.github.kotoba-lang/robotics
+        {:local/root "../../kotoba-lang/robotics"}}
  :aliases
  {;; offline workspace dev -- pin transitive langchain to local checkout
   :dev {:override-deps

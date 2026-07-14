@@ -32,6 +32,7 @@
             [clojure.string :as str]
             [automotive.facts :as facts]
             [automotive.registry :as registry]
+            [automotive.robotics :as robotics]
             [automotive.store :as store]
             [langchain.model :as model]))
 
@@ -109,6 +110,35 @@
        :stake      nil
        :confidence 0.9})))
 
+(defn- simulate-assembly-line
+  "Runs the robot CAE/assembly-line verification mission
+  (`automotive.robotics`) and drafts its result as a proposal. High
+  confidence -- the mission itself is deterministic simulated telemetry
+  derived from the vehicle's own recorded structural-deviation fields,
+  not an LLM guess; the Automotive Governor still independently re-
+  derives :passed? from those same fields before any `:actuation/
+  dispatch-vehicle` proposal may commit -- see `automotive.governor`'s
+  `robotics-simulation-violations`."
+  [db {:keys [subject]}]
+  (let [a (store/vehicle db subject)]
+    (if (nil? a)
+      {:summary "対象車両記録が見つかりません" :rationale "no vehicle record"
+       :cites [] :effect :vehicle/upsert :value {:id subject :robotics-sim-verified? false}
+       :stake nil :confidence 0.0}
+      (let [{:keys [mission actions passed?]} (robotics/simulate-assembly-line subject a)]
+        {:summary    (str subject ": CAE/組立ロボット検証ミッション " (if passed? "合格" "不合格"))
+         :rationale  (str "mission=" (:mission/id mission) " actions=" (count actions)
+                          " structural-deviation-actual=" (:structural-deviation-actual a))
+         :cites      [(:mission/id mission)]
+         :effect     :vehicle/upsert
+         :value      {:id subject
+                      :robotics-sim-verified? passed?
+                      :robotics-sim-record {:mission-id (:mission/id mission)
+                                            :actions (mapv #(dissoc % :action) actions)
+                                            :passed? passed?}}
+         :stake      nil
+         :confidence 0.95}))))
+
 (defn- propose-vehicle-dispatch
   "Draft the actual VEHICLE-DISPATCH action -- dispatching a real
   robot assembly/finishing action on a safety-critical vehicle.
@@ -163,6 +193,7 @@
     :vehicle/intake                              (normalize-intake db request)
     :type-approval-rules/verify                  (verify-requirements db request)
     :end-of-line-quality/screen                  (screen-eol-defect db request)
+    :robotics/simulate-assembly-line             (simulate-assembly-line db request)
     :actuation/dispatch-vehicle                  (propose-vehicle-dispatch db request)
     :actuation/issue-conformity-certificate      (propose-conformity-certificate db request)
     {:summary "未対応の操作" :rationale (str op) :cites []
@@ -185,6 +216,8 @@
        ":cites(使った事実キーのベクタ) "
        ":effect(:vehicle/upsert|:verification/set|:eol-screen/set|"
        ":vehicle/mark-dispatched|:vehicle/mark-certified) "
+       "(:robotics/simulate-assembly-line も :vehicle/upsert で "
+       ":robotics-sim-verified? を提案する) "
        ":stake(:actuation/dispatch-vehicle か :actuation/issue-conformity-certificate か nil) :confidence(0..1)。\n"
        "重要: 登録されていない法域の要件を絶対に創作してはいけません。"
        "spec-basisが無い場合は :cites を空にし confidence を上げないこと。"))
@@ -193,6 +226,7 @@
   (case op
     :type-approval-rules/verify                  {:vehicle (store/vehicle st subject)}
     :end-of-line-quality/screen                   {:vehicle (store/vehicle st subject)}
+    :robotics/simulate-assembly-line              {:vehicle (store/vehicle st subject)}
     :actuation/dispatch-vehicle                   {:vehicle (store/vehicle st subject)}
     :actuation/issue-conformity-certificate       {:vehicle (store/vehicle st subject)}
     {:vehicle (store/vehicle st subject)}))

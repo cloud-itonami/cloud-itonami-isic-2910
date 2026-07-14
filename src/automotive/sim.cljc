@@ -45,6 +45,10 @@
     (println (exec! actor "t3" {:op :end-of-line-quality/screen :subject "vehicle-1"} operator))
     (println (approve! actor "t3"))
 
+    (println "== robotics/simulate-assembly-line vehicle-1 (robot CAE/assembly mission; escalates -- human approves) ==")
+    (println (exec! actor "t3b" {:op :robotics/simulate-assembly-line :subject "vehicle-1"} operator))
+    (println (approve! actor "t3b"))
+
     (println "== actuation/dispatch-vehicle vehicle-1 (always escalates -- actuation/dispatch-vehicle) ==")
     (let [r (exec! actor "t4" {:op :actuation/dispatch-vehicle :subject "vehicle-1"} operator)]
       (println r)
@@ -64,8 +68,20 @@
     (println (exec! actor "t7" {:op :type-approval-rules/verify :subject "vehicle-3"} operator))
     (println (approve! actor "t7"))
 
-    (println "== actuation/dispatch-vehicle vehicle-3 (0.35 outside [-0.10,0.10] tolerance -> HARD hold) ==")
+    (println "== actuation/dispatch-vehicle vehicle-3 before robotics simulation -> HARD hold (robotics-simulation-missing) ==")
+    (println (exec! actor "t7b" {:op :actuation/dispatch-vehicle :subject "vehicle-3"} operator))
+
+    (println "== robotics/simulate-assembly-line vehicle-3 (clean structural deviation; escalates -- human approves) ==")
+    (println (exec! actor "t7c" {:op :robotics/simulate-assembly-line :subject "vehicle-3"} operator))
+    (println (approve! actor "t7c"))
+
+    (println "== actuation/dispatch-vehicle vehicle-3 (0.35 outside [-0.10,0.10] emissions tolerance -> HARD hold) ==")
     (println (exec! actor "t8" {:op :actuation/dispatch-vehicle :subject "vehicle-3"} operator))
+
+    (println "== actuation/dispatch-vehicle vehicle-5 (robotics-sim on file, but structural deviation 0.30 outside [-0.05,0.05] tolerance on independent recheck -> HARD hold) ==")
+    (println (exec! actor "t8b" {:op :type-approval-rules/verify :subject "vehicle-5"} operator))
+    (println (approve! actor "t8b"))
+    (println (exec! actor "t8c" {:op :actuation/dispatch-vehicle :subject "vehicle-5"} operator))
 
     (println "== end-of-line-quality/screen vehicle-4 (unresolved -> HARD hold, never reaches a human) ==")
     (println (exec! actor "t9" {:op :end-of-line-quality/screen :subject "vehicle-4"} operator))

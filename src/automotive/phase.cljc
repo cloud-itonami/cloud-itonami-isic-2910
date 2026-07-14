@@ -7,7 +7,8 @@
                                  needs human approval.
     Phase 2  assisted-verify  -- adds type-approval requirements
                                  verification + end-of-line quality
-                                 screening writes, still approval.
+                                 screening + robot CAE/assembly-line
+                                 simulation writes, still approval.
     Phase 3  supervised auto  -- governor-clean, high-confidence
                                  `:vehicle/intake` (no capital risk
                                  yet) may auto-commit. `:actuation/
@@ -25,14 +26,16 @@
   `automotive.governor`'s `:actuation/dispatch-vehicle`/`:actuation/
   issue-conformity-certificate` high-stakes gate enforces the same
   invariant independently -- two layers, not one, agree on this.
-  `:end-of-line-quality/screen` is likewise never auto-eligible, at
-  any phase -- the same posture every sibling's screening op has.
+  `:end-of-line-quality/screen`/`:robotics/simulate-assembly-line` are
+  likewise never auto-eligible, at any phase -- the same posture every
+  sibling's screening/verification op has.
   Phase 3's `:auto` set here has only ONE member (`:vehicle/intake`)
   -- this domain has no separate no-capital-risk 'file' lifecycle
   distinct from the vehicle record itself.")
 
 (def read-ops  #{})
 (def write-ops #{:vehicle/intake :type-approval-rules/verify :end-of-line-quality/screen
+                 :robotics/simulate-assembly-line
                  :actuation/dispatch-vehicle :actuation/issue-conformity-certificate})
 
 ;; NOTE the invariant: `:actuation/dispatch-vehicle`/`:actuation/
@@ -44,7 +47,8 @@
   auto-commit when governor-clean>}."
   {0 {:label "read-only"        :writes #{}                                                          :auto #{}}
    1 {:label "assisted-intake"  :writes #{:vehicle/intake}                                          :auto #{}}
-   2 {:label "assisted-verify"  :writes #{:vehicle/intake :type-approval-rules/verify :end-of-line-quality/screen}          :auto #{}}
+   2 {:label "assisted-verify"  :writes #{:vehicle/intake :type-approval-rules/verify :end-of-line-quality/screen
+                                          :robotics/simulate-assembly-line}          :auto #{}}
    3 {:label "supervised-auto"  :writes write-ops
       :auto #{:vehicle/intake}}})
 

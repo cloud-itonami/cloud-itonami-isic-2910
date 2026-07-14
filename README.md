@@ -42,6 +42,16 @@ The governor never issues a Certificate of Conformity itself;
 `:high`/`:safety-critical` actions (`:actuation/dispatch-vehicle`,
 `:actuation/issue-conformity-certificate`) require human sign-off.
 
+**Robot process simulation is concrete, not just a flag** (ADR-2607142000,
+extending ADR-2607011000): `automotive.robotics` walks every vehicle
+through a robot-executed CAE/assembly-line verification mission
+(`kotoba.robotics` mission/action/telemetry-proof contracts) --
+crash-simulation replay, chassis-weld torque-check, paint-thickness
+scan -- before `:actuation/dispatch-vehicle` is proposable. The
+Automotive Governor independently re-derives the vehicle's own
+structural-deviation tolerance from ground-truth fields, never trusting
+the mission's self-reported verdict alone.
+
 ## Core contract
 
 ```text
@@ -68,7 +78,8 @@ motor-vehicle plant's own acts.
 | `:vehicle/intake` | normalize vehicle directory patch (phase 3 may auto-commit when clean) |
 | `:type-approval-rules/verify` | per-jurisdiction Certificate-of-Conformity evidence checklist (always human) |
 | `:end-of-line-quality/screen` | end-of-line defect screen (HARD hold if unresolved) |
-| `:actuation/dispatch-vehicle` | draft vehicle-dispatch record (always human) |
+| `:robotics/simulate-assembly-line` | robot CAE/assembly-line verification mission (always human; required on file before dispatch) |
+| `:actuation/dispatch-vehicle` | draft vehicle-dispatch record (always human; HARD hold if robotics-sim missing or independently out-of-tolerance) |
 | `:actuation/issue-conformity-certificate` | draft Certificate-of-Conformity record (always human) |
 
 ## Social / regulatory hand-off
