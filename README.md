@@ -42,15 +42,40 @@ The governor never issues a Certificate of Conformity itself;
 `:high`/`:safety-critical` actions (`:actuation/dispatch-vehicle`,
 `:actuation/issue-conformity-certificate`) require human sign-off.
 
-**Robot process simulation is concrete, not just a flag** (ADR-2607142000,
+**Robot process simulation is concrete, not just a flag** (ADR-2607142800,
 extending ADR-2607011000): `automotive.robotics` walks every vehicle
 through a robot-executed CAE/assembly-line verification mission
 (`kotoba.robotics` mission/action/telemetry-proof contracts) --
 crash-simulation replay, chassis-weld torque-check, paint-thickness
-scan -- before `:actuation/dispatch-vehicle` is proposable. The
+scan -- before `:actuation/dispatch-vehicle` is proposable.
+
+**This is now a REAL engineering simulation, not a synthetic field
+comparison (ADR-2607151600, superseding ADR-2607083500's "zero
+dependency / opaque payload" wall FOR THE AUTOMOTIVE VERTICAL ONLY).**
+This repository takes a REAL git-coordinate dependency on
+[`kami-engine-vehicle-designer`](https://github.com/kotoba-lang/kami-engine-vehicle-designer)
+(pinned by SHA in `deps.edn`), and `automotive.robotics/simulate-
+assembly-line` actually calls it: a real time-stepped rigid-body
+crash-dispatch simulation (`vdesign.simphysics`, built on
+`kotoba-lang/physics-2d`'s real impulse solver -- the vehicle's own
+`:class`/`:curb-mass-kg` become an actual `Body2D` stepped tick-by-tick
+into a static barrier at the real 56 km/h frontal-crash-test speed), a
+real tessellated packaging-envelope + per-tick trajectory scene bridge
+(`vdesign.scene`, `kami.webgpu.mesh`'s real renderable input shape --
+stored as evidence the process was genuinely simulated), and a real
+Cartesian assembly-station motion plan (`vdesign.motionplan`). The
 Automotive Governor independently re-derives the vehicle's own
-structural-deviation tolerance from ground-truth fields, never trusting
-the mission's self-reported verdict alone.
+real crash telemetry (`:sim-decel-g`/`:sim-crush-distance-m`) against a
+real tolerance band anchored on `vdesign.simverify`'s established
+reference values (the 20g crash pulse, per-class crush-zone geometry),
+never trusting the mission's self-reported verdict alone. Honest scope:
+the physics is a 2D projection, the geometry is a packaging-envelope
+box, and the motion plan is a straight-line waypoint list -- see
+`automotive.robotics`'s namespace docstring for the full, disclosed
+derivation. This real-engine wiring is scoped to the automotive vertical
+only; every other cloud-itonami manufacturing actor remains on the
+symbolic robotics-simulation layer (ADR-2607142800) until a similar
+integration is built for each.
 
 ## Core contract
 

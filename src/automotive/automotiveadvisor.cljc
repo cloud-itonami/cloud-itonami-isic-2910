@@ -112,30 +112,41 @@
 
 (defn- simulate-assembly-line
   "Runs the robot CAE/assembly-line verification mission
-  (`automotive.robotics`) and drafts its result as a proposal. High
-  confidence -- the mission itself is deterministic simulated telemetry
-  derived from the vehicle's own recorded structural-deviation fields,
-  not an LLM guess; the Automotive Governor still independently re-
-  derives :passed? from those same fields before any `:actuation/
-  dispatch-vehicle` proposal may commit -- see `automotive.governor`'s
-  `robotics-simulation-violations`."
+  (`automotive.robotics`) and drafts its result as a proposal. This now
+  ACTUALLY calls the real `kami-engine-vehicle-designer` engine
+  (ADR-2607151600): a `physics-2d`-stepped crash-dispatch trajectory,
+  a real tessellated-mesh scene bridge and a real Cartesian
+  assembly-station motion plan (see `automotive.robotics/simulate-
+  assembly-line`'s docstring). High confidence -- the mission itself is
+  deterministic simulated telemetry derived from the vehicle's own
+  recorded `:class`/`:powertrain`/`:curb-mass-kg` fields (never an LLM
+  guess); the Automotive Governor still independently re-derives
+  :passed? from the real telemetry fields this drafts before any
+  `:actuation/dispatch-vehicle` proposal may commit -- see `automotive.
+  governor`'s `robotics-simulation-violations`."
   [db {:keys [subject]}]
   (let [a (store/vehicle db subject)]
     (if (nil? a)
       {:summary "対象車両記録が見つかりません" :rationale "no vehicle record"
        :cites [] :effect :vehicle/upsert :value {:id subject :robotics-sim-verified? false}
        :stake nil :confidence 0.0}
-      (let [{:keys [mission actions passed?]} (robotics/simulate-assembly-line subject a)]
+      (let [{:keys [mission actions passed? sim-decel-g sim-crush-distance-m scene motion-plan]}
+            (robotics/simulate-assembly-line subject a)]
         {:summary    (str subject ": CAE/組立ロボット検証ミッション " (if passed? "合格" "不合格"))
          :rationale  (str "mission=" (:mission/id mission) " actions=" (count actions)
-                          " structural-deviation-actual=" (:structural-deviation-actual a))
+                          " sim-decel-g=" sim-decel-g " sim-crush-distance-m=" sim-crush-distance-m
+                          " scene-frames=" (:frame-count scene) " waypoints=" (:waypoint-count motion-plan))
          :cites      [(:mission/id mission)]
          :effect     :vehicle/upsert
          :value      {:id subject
                       :robotics-sim-verified? passed?
+                      :sim-decel-g sim-decel-g
+                      :sim-crush-distance-m sim-crush-distance-m
                       :robotics-sim-record {:mission-id (:mission/id mission)
                                             :actions (mapv #(dissoc % :action) actions)
-                                            :passed? passed?}}
+                                            :passed? passed?
+                                            :scene scene
+                                            :motion-plan motion-plan}}
          :stake      nil
          :confidence 0.95}))))
 

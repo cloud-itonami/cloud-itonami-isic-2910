@@ -1,5 +1,11 @@
 (ns automotive.sim
-  "Demo driver -- `clojure -M:dev:run`. Walks a clean vehicle through
+  "Demo driver -- `clojure -M:dev:run`. `robotics/simulate-assembly-
+  line` now actually runs `kami-engine-vehicle-designer`'s real
+  `physics-2d`-backed time-stepped crash simulation, tessellated-scene
+  bridge and Cartesian motion plan (ADR-2607151600, superseding
+  ADR-2607083500's opaque-payload wall for this vertical only) --
+  see `automotive.robotics` for what is genuinely simulated vs.
+  disclosed simplification. Walks a clean vehicle through
   intake -> type-approval requirements verification -> end-of-line-
   defect screening -> vehicle-dispatch proposal (always escalates) ->
   human approval -> commit, then through Certificate-of-Conformity
@@ -71,14 +77,14 @@
     (println "== actuation/dispatch-vehicle vehicle-3 before robotics simulation -> HARD hold (robotics-simulation-missing) ==")
     (println (exec! actor "t7b" {:op :actuation/dispatch-vehicle :subject "vehicle-3"} operator))
 
-    (println "== robotics/simulate-assembly-line vehicle-3 (clean structural deviation; escalates -- human approves) ==")
+    (println "== robotics/simulate-assembly-line vehicle-3 (real sedan/1150kg crash simulation clears tolerance; escalates -- human approves) ==")
     (println (exec! actor "t7c" {:op :robotics/simulate-assembly-line :subject "vehicle-3"} operator))
     (println (approve! actor "t7c"))
 
     (println "== actuation/dispatch-vehicle vehicle-3 (0.35 outside [-0.10,0.10] emissions tolerance -> HARD hold) ==")
     (println (exec! actor "t8" {:op :actuation/dispatch-vehicle :subject "vehicle-3"} operator))
 
-    (println "== actuation/dispatch-vehicle vehicle-5 (robotics-sim on file, but structural deviation 0.30 outside [-0.05,0.05] tolerance on independent recheck -> HARD hold) ==")
+    (println "== actuation/dispatch-vehicle vehicle-5 (robotics-sim on file, but a real re-run physics-2d crash simulation of this misclassified-:city pickup shows ~49g exceeding the real tolerance ceiling on independent recheck -> HARD hold) ==")
     (println (exec! actor "t8b" {:op :type-approval-rules/verify :subject "vehicle-5"} operator))
     (println (approve! actor "t8b"))
     (println (exec! actor "t8c" {:op :actuation/dispatch-vehicle :subject "vehicle-5"} operator))

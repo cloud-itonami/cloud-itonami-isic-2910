@@ -47,10 +47,16 @@
                                        on the vehicle
                                        (`:robotics-sim-verified?`)? AND
                                        INDEPENDENTLY recompute whether
-                                       the vehicle's own recorded
-                                       structural-deviation reading
-                                       falls out of its own recorded
-                                       tolerance bounds
+                                       the vehicle's own recorded REAL
+                                       `physics-2d`-simulated crash
+                                       telemetry (`:sim-decel-g`/
+                                       `:sim-crush-distance-m`, from
+                                       `kami-engine-vehicle-designer`'s
+                                       `vdesign.simphysics`,
+                                       ADR-2607151600) falls outside a
+                                       real tolerance band derived from
+                                       `vdesign.simverify`'s established
+                                       reference values
                                        (`automotive.robotics/
                                        simulation-out-of-tolerance?`),
                                        ignoring whatever :passed?
@@ -171,11 +177,13 @@
   "For `:actuation/dispatch-vehicle`: HARD hold if the robot CAE/
   assembly-line verification mission (`automotive.robotics`) never ran
   and was recorded on the vehicle (`:robotics-sim-verified?`), OR if it
-  did but an INDEPENDENT recompute of the vehicle's own structural-
-  deviation fields (`automotive.robotics/simulation-out-of-tolerance?`)
-  says out-of-tolerance right now -- never trusts the mission's own
-  stored :passed? verdict alone, the same discipline `vehicle-
-  emissions-out-of-range-violations` below uses for emissions."
+  did but an INDEPENDENT recompute of the vehicle's own REAL
+  `vdesign.simphysics`-simulated crash telemetry (`:sim-decel-g`/
+  `:sim-crush-distance-m`, ADR-2607151600 -- `automotive.robotics/
+  simulation-out-of-tolerance?`) says out-of-tolerance right now --
+  never trusts the mission's own stored :passed? verdict alone, the
+  same discipline `vehicle-emissions-out-of-range-violations` below
+  uses for emissions."
   [{:keys [op subject]} st]
   (when (= op :actuation/dispatch-vehicle)
     (let [a (store/vehicle st subject)]
@@ -186,9 +194,9 @@
 
         (robotics/simulation-out-of-tolerance? a)
         [{:rule :robotics-simulation-out-of-tolerance
-          :detail (str subject " の構造偏差実測値("
-                       (:structural-deviation-actual a) ")が独立再検証で許容範囲["
-                       (:structural-deviation-min a) "," (:structural-deviation-max a) "]を逸脱")}]))))
+          :detail (str subject " の実測クラッシュ減速度(" (:sim-decel-g a)
+                       "g)/クラッシュ侵入量(" (:sim-crush-distance-m a)
+                       "m)が独立再検証で許容範囲(上限" robotics/decel-ceiling-g "g)を逸脱")}]))))
 
 (defn- vehicle-emissions-out-of-range-violations
   "For `:actuation/dispatch-vehicle`, INDEPENDENTLY recompute whether

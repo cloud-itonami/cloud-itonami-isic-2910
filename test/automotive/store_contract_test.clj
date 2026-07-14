@@ -6,6 +6,7 @@
   `underwriting.store-contract-test` for the same pattern on the sibling
   actor."
   (:require [clojure.test :refer [deftest is testing]]
+            [automotive.robotics :as robotics]
             [automotive.store :as store]))
 
 (defn- backends []
@@ -24,7 +25,16 @@
       (is (true? (:eol-defect-unresolved? (store/vehicle s "vehicle-4"))))
       (is (false? (:robotics-sim-verified? (store/vehicle s "vehicle-1"))) "no robotics mission has run yet")
       (is (true? (:robotics-sim-verified? (store/vehicle s "vehicle-5"))) "seeded as already-on-file")
-      (is (= 0.30 (:structural-deviation-actual (store/vehicle s "vehicle-5"))))
+      (is (= :sedan (:class (store/vehicle s "vehicle-1"))))
+      (is (= :bev (:powertrain (store/vehicle s "vehicle-1"))))
+      (is (= 1480.0 (:curb-mass-kg (store/vehicle s "vehicle-1"))))
+      (is (number? (:sim-decel-g (store/vehicle s "vehicle-1"))) "real vdesign.simphysics telemetry on file")
+      (is (<= (:sim-decel-g (store/vehicle s "vehicle-1")) robotics/decel-ceiling-g)
+          "vehicle-1's real sedan/1480kg crash trajectory clears the real tolerance band")
+      (is (= :city (:class (store/vehicle s "vehicle-5")))
+          "vehicle-5 (a pickup) is deliberately misclassified :city -- see automotive.store/demo-data")
+      (is (> (:sim-decel-g (store/vehicle s "vehicle-5")) robotics/decel-ceiling-g)
+          "vehicle-5's real simulated crash pulse genuinely exceeds the real tolerance band")
       (is (false? (:vehicle-dispatched? (store/vehicle s "vehicle-1"))))
       (is (false? (:conformity-certified? (store/vehicle s "vehicle-1"))))
       (is (= ["vehicle-1" "vehicle-2" "vehicle-3" "vehicle-4" "vehicle-5"]

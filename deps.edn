@@ -9,7 +9,19 @@
  :deps {io.github.kotoba-lang/langgraph
         {:local/root "../../kotoba-lang/langgraph"}
         io.github.kotoba-lang/robotics
-        {:local/root "../../kotoba-lang/robotics"}}
+        {:local/root "../../kotoba-lang/robotics"}
+        ;; REAL engineering-simulation dependency (ADR-2607151600, amending
+        ;; ADR-2607083500's "zero dependency / opaque payload" wall for the
+        ;; automotive vertical ONLY): automotive.robotics now actually calls
+        ;; vdesign.simphysics/vdesign.scene/vdesign.motionplan -- a real
+        ;; physics-2d-backed time-stepped rigid-body crash-dispatch
+        ;; simulation, a real tessellated-mesh scene bridge and a real
+        ;; Cartesian assembly-station motion plan -- instead of comparing
+        ;; static self-reported fields. physics-2d/org-iso-10303/org-iso-6983/
+        ;; cad resolve transitively from this git dep's own deps.edn.
+        io.github.kotoba-lang/kami-engine-vehicle-designer
+        {:git/url "https://github.com/kotoba-lang/kami-engine-vehicle-designer.git"
+         :sha "09f9c57cb27acc53ac5cb241e72f9b582d202bc3"}}
  :aliases
  {;; offline workspace dev -- pin transitive langchain to local checkout
   :dev {:override-deps

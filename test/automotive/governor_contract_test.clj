@@ -47,12 +47,15 @@
 
 (defn- simulate-robotics!
   "Walks `subject` through the robot CAE/assembly-line verification
-  mission -> approve, leaving `:robotics-sim-verified?` on file. Only
-  meaningful to call for a vehicle whose structural-deviation is
-  actually within tolerance -- an out-of-tolerance vehicle still gets
-  :robotics-sim-verified? recorded (per whatever the mission itself
-  found), but `automotive.governor`'s independent recheck HARD-holds
-  regardless (see `robotics-simulation-out-of-tolerance-is-held`)."
+  mission -> approve, leaving `:robotics-sim-verified?` on file. This
+  now ACTUALLY runs the real `vdesign.simphysics`-backed crash
+  simulation for the vehicle's own :class/:curb-mass-kg (ADR-2607151600)
+  -- only meaningful to call for a vehicle whose real simulated crash
+  telemetry is actually within tolerance -- an out-of-tolerance vehicle
+  still gets :robotics-sim-verified? recorded (per whatever the mission
+  itself found), but `automotive.governor`'s independent recheck
+  HARD-holds regardless (see `robotics-simulation-out-of-tolerance-is-
+  held`)."
   [actor tid-prefix subject]
   (exec-op actor (str tid-prefix "-robotics") {:op :robotics/simulate-assembly-line :subject subject} operator)
   (approve! actor (str tid-prefix "-robotics")))
@@ -178,7 +181,7 @@
       (is (empty? (store/dispatch-history db))))))
 
 (deftest robotics-simulation-out-of-tolerance-is-held
-  (testing "vehicle-5 has a robotics-sim already on file, but its own structural-deviation reading falls outside its own tolerance bounds on INDEPENDENT recheck -> HOLD, never trusts the on-file verdict alone"
+  (testing "vehicle-5 has a robotics-sim already on file, but its own REAL vdesign.simphysics-simulated crash telemetry (:sim-decel-g/:sim-crush-distance-m -- ADR-2607151600) falls outside the real tolerance band on INDEPENDENT recheck -> HOLD, never trusts the on-file verdict alone. vehicle-5 (a pickup) is deliberately misclassified :city (the shortest, 0.50m crush-zone class) in the demo fixture (automotive.store/demo-data) -- a genuine design-record inconsistency the real, re-run simulation catches."
     (let [[db actor] (fresh)
           _ (verify! actor "t13pre" "vehicle-5")
           res (exec-op actor "t13" {:op :actuation/dispatch-vehicle :subject "vehicle-5"} operator)]

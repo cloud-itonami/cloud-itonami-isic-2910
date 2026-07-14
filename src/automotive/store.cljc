@@ -37,6 +37,7 @@
   (:require #?(:clj  [clojure.edn :as edn]
                :cljs [cljs.reader :as edn])
             [automotive.registry :as registry]
+            [automotive.robotics :as robotics]
             [langchain.db :as d]))
 
 (defprotocol Store
@@ -57,47 +58,75 @@
 
 ;; ----------------------------- demo data -----------------------------
 
+(defn- with-crash-telemetry
+  "Merges REAL crash telemetry onto a demo vehicle's base fields --
+  `automotive.robotics/crash-telemetry-for` actually runs `vdesign.
+  simphysics`'s `physics-2d`-stepped simulation for this vehicle's own
+  `:class`/`:curb-mass-kg` (ADR-2607151600), so even the 'already on
+  file' seed data (as if from an earlier real CAE-simulation report) is
+  genuinely simulation-derived, never hand-typed doubles."
+  [base]
+  (merge base (select-keys (robotics/crash-telemetry-for base)
+                           [:sim-decel-g :sim-crush-distance-m])))
+
 (defn demo-data
   "A small, self-contained vehicle set covering both actuation
   lifecycles (dispatching a vehicle action, issuing a Certificate of
-  Conformity) so the actor + tests run offline."
+  Conformity) so the actor + tests run offline. `:class`/`:powertrain`/
+  `:curb-mass-kg` (ADR-2607151600) are permanent vehicle-design fields
+  (like `:emissions-deviation-actual`); `:sim-decel-g`/`:sim-crush-
+  distance-m` are the REAL `vdesign.simphysics`-computed crash telemetry
+  for those fields (`with-crash-telemetry`), the ground truth
+  `automotive.robotics/simulation-out-of-tolerance?` independently
+  rechecks. vehicle-5 (a pickup) is DELIBERATELY misclassified `:city`
+  (the shortest, 0.50 m crush-zone class) -- a genuine design-record
+  inconsistency (no real pickup has a city-car crush zone) that the
+  real, re-run simulation catches on independent recheck even though
+  `:robotics-sim-verified?` was seeded `true` (\"already on file\", i.e.
+  someone/something marked it passed without this real check ever
+  having run) -- the motor-vehicle-manufacturer analog of vehicle-1..4's
+  genuinely-consistent class/mass combinations, which all clear the
+  real tolerance band with margin (see `automotive.robotics/decel-
+  ceiling-g`)."
   []
   {:vehicles
-   {"vehicle-1" {:id "vehicle-1" :vehicle-name "Sakura Compact Sedan CS-04"
-                  :emissions-deviation-actual 0.05 :emissions-deviation-min -0.10 :emissions-deviation-max 0.10
-                  :structural-deviation-actual 0.02 :structural-deviation-min -0.05 :structural-deviation-max 0.05
-                  :eol-defect-unresolved? false
-                  :robotics-sim-verified? false :robotics-sim-record nil
-                  :vehicle-dispatched? false :conformity-certified? false
-                  :jurisdiction "JPN" :status :intake}
-    "vehicle-2" {:id "vehicle-2" :vehicle-name "Atlantis Crossover CX-12"
-                  :emissions-deviation-actual 0.05 :emissions-deviation-min -0.10 :emissions-deviation-max 0.10
-                  :structural-deviation-actual 0.02 :structural-deviation-min -0.05 :structural-deviation-max 0.05
-                  :eol-defect-unresolved? false
-                  :robotics-sim-verified? false :robotics-sim-record nil
-                  :vehicle-dispatched? false :conformity-certified? false
-                  :jurisdiction "ATL" :status :intake}
-    "vehicle-3" {:id "vehicle-3" :vehicle-name "鈴木コンパクトカー SC-07"
-                  :emissions-deviation-actual 0.35 :emissions-deviation-min -0.10 :emissions-deviation-max 0.10
-                  :structural-deviation-actual 0.02 :structural-deviation-min -0.05 :structural-deviation-max 0.05
-                  :eol-defect-unresolved? false
-                  :robotics-sim-verified? false :robotics-sim-record nil
-                  :vehicle-dispatched? false :conformity-certified? false
-                  :jurisdiction "JPN" :status :intake}
-    "vehicle-4" {:id "vehicle-4" :vehicle-name "田中SUVモデル SV-03"
-                  :emissions-deviation-actual 0.05 :emissions-deviation-min -0.10 :emissions-deviation-max 0.10
-                  :structural-deviation-actual 0.02 :structural-deviation-min -0.05 :structural-deviation-max 0.05
-                  :eol-defect-unresolved? true
-                  :robotics-sim-verified? false :robotics-sim-record nil
-                  :vehicle-dispatched? false :conformity-certified? false
-                  :jurisdiction "JPN" :status :intake}
-    "vehicle-5" {:id "vehicle-5" :vehicle-name "佐藤ピックアップ PU-09"
-                  :emissions-deviation-actual 0.05 :emissions-deviation-min -0.10 :emissions-deviation-max 0.10
-                  :structural-deviation-actual 0.30 :structural-deviation-min -0.05 :structural-deviation-max 0.05
-                  :eol-defect-unresolved? false
-                  :robotics-sim-verified? true :robotics-sim-record nil
-                  :vehicle-dispatched? false :conformity-certified? false
-                  :jurisdiction "JPN" :status :intake}}})
+   (into {}
+         (map (fn [v] [(:id v) (with-crash-telemetry v)]))
+         [{:id "vehicle-1" :vehicle-name "Sakura Compact Sedan CS-04"
+           :emissions-deviation-actual 0.05 :emissions-deviation-min -0.10 :emissions-deviation-max 0.10
+           :class :sedan :powertrain :bev :curb-mass-kg 1480.0
+           :eol-defect-unresolved? false
+           :robotics-sim-verified? false :robotics-sim-record nil
+           :vehicle-dispatched? false :conformity-certified? false
+           :jurisdiction "JPN" :status :intake}
+          {:id "vehicle-2" :vehicle-name "Atlantis Crossover CX-12"
+           :emissions-deviation-actual 0.05 :emissions-deviation-min -0.10 :emissions-deviation-max 0.10
+           :class :suv :powertrain :bev :curb-mass-kg 2050.0
+           :eol-defect-unresolved? false
+           :robotics-sim-verified? false :robotics-sim-record nil
+           :vehicle-dispatched? false :conformity-certified? false
+           :jurisdiction "ATL" :status :intake}
+          {:id "vehicle-3" :vehicle-name "鈴木コンパクトカー SC-07"
+           :emissions-deviation-actual 0.35 :emissions-deviation-min -0.10 :emissions-deviation-max 0.10
+           :class :sedan :powertrain :bev :curb-mass-kg 1150.0
+           :eol-defect-unresolved? false
+           :robotics-sim-verified? false :robotics-sim-record nil
+           :vehicle-dispatched? false :conformity-certified? false
+           :jurisdiction "JPN" :status :intake}
+          {:id "vehicle-4" :vehicle-name "田中SUVモデル SV-03"
+           :emissions-deviation-actual 0.05 :emissions-deviation-min -0.10 :emissions-deviation-max 0.10
+           :class :suv :powertrain :fcev :curb-mass-kg 2200.0
+           :eol-defect-unresolved? true
+           :robotics-sim-verified? false :robotics-sim-record nil
+           :vehicle-dispatched? false :conformity-certified? false
+           :jurisdiction "JPN" :status :intake}
+          {:id "vehicle-5" :vehicle-name "佐藤ピックアップ PU-09"
+           :emissions-deviation-actual 0.05 :emissions-deviation-min -0.10 :emissions-deviation-max 0.10
+           :class :city :powertrain :bev :curb-mass-kg 2400.0
+           :eol-defect-unresolved? false
+           :robotics-sim-verified? true :robotics-sim-record nil
+           :vehicle-dispatched? false :conformity-certified? false
+           :jurisdiction "JPN" :status :intake}])})
 
 ;; ----------------------------- shared commit logic -----------------------------
 
@@ -208,7 +237,7 @@
 (defn- dec* [s] (when s (edn/read-string s)))
 
 (defn- vehicle->tx [{:keys [id vehicle-name emissions-deviation-actual emissions-deviation-min emissions-deviation-max
-                             structural-deviation-actual structural-deviation-min structural-deviation-max
+                             class powertrain curb-mass-kg sim-decel-g sim-crush-distance-m
                              eol-defect-unresolved? robotics-sim-verified? robotics-sim-record
                              vehicle-dispatched? conformity-certified?
                              jurisdiction status dispatch-number evidence-number]}]
@@ -217,9 +246,11 @@
     emissions-deviation-actual                  (assoc :vehicle/emissions-deviation-actual emissions-deviation-actual)
     emissions-deviation-min                     (assoc :vehicle/emissions-deviation-min emissions-deviation-min)
     emissions-deviation-max                     (assoc :vehicle/emissions-deviation-max emissions-deviation-max)
-    structural-deviation-actual                 (assoc :vehicle/structural-deviation-actual structural-deviation-actual)
-    structural-deviation-min                    (assoc :vehicle/structural-deviation-min structural-deviation-min)
-    structural-deviation-max                    (assoc :vehicle/structural-deviation-max structural-deviation-max)
+    class                                        (assoc :vehicle/class class)
+    powertrain                                   (assoc :vehicle/powertrain powertrain)
+    curb-mass-kg                                 (assoc :vehicle/curb-mass-kg curb-mass-kg)
+    sim-decel-g                                   (assoc :vehicle/sim-decel-g sim-decel-g)
+    (some? sim-crush-distance-m)                 (assoc :vehicle/sim-crush-distance-m sim-crush-distance-m)
     (some? eol-defect-unresolved?)              (assoc :vehicle/eol-defect-unresolved? eol-defect-unresolved?)
     (some? robotics-sim-verified?)               (assoc :vehicle/robotics-sim-verified? robotics-sim-verified?)
     (some? robotics-sim-record)                  (assoc :vehicle/robotics-sim-record (enc robotics-sim-record))
@@ -233,7 +264,8 @@
 (def ^:private vehicle-pull
   [:vehicle/id :vehicle/vehicle-name :vehicle/emissions-deviation-actual
    :vehicle/emissions-deviation-min :vehicle/emissions-deviation-max
-   :vehicle/structural-deviation-actual :vehicle/structural-deviation-min :vehicle/structural-deviation-max
+   :vehicle/class :vehicle/powertrain :vehicle/curb-mass-kg
+   :vehicle/sim-decel-g :vehicle/sim-crush-distance-m
    :vehicle/eol-defect-unresolved? :vehicle/robotics-sim-verified? :vehicle/robotics-sim-record
    :vehicle/vehicle-dispatched? :vehicle/conformity-certified?
    :vehicle/jurisdiction :vehicle/status :vehicle/dispatch-number :vehicle/evidence-number])
@@ -244,9 +276,10 @@
      :emissions-deviation-actual (:vehicle/emissions-deviation-actual m)
      :emissions-deviation-min (:vehicle/emissions-deviation-min m)
      :emissions-deviation-max (:vehicle/emissions-deviation-max m)
-     :structural-deviation-actual (:vehicle/structural-deviation-actual m)
-     :structural-deviation-min (:vehicle/structural-deviation-min m)
-     :structural-deviation-max (:vehicle/structural-deviation-max m)
+     :class (:vehicle/class m) :powertrain (:vehicle/powertrain m)
+     :curb-mass-kg (:vehicle/curb-mass-kg m)
+     :sim-decel-g (:vehicle/sim-decel-g m)
+     :sim-crush-distance-m (:vehicle/sim-crush-distance-m m)
      :eol-defect-unresolved? (boolean (:vehicle/eol-defect-unresolved? m))
      :robotics-sim-verified? (boolean (:vehicle/robotics-sim-verified? m))
      :robotics-sim-record (dec* (:vehicle/robotics-sim-record m))
