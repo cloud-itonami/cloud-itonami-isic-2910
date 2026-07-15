@@ -21,7 +21,22 @@
         ;; cad resolve transitively from this git dep's own deps.edn.
         io.github.kotoba-lang/kami-engine-vehicle-designer
         {:git/url "https://github.com/kotoba-lang/kami-engine-vehicle-designer.git"
-         :sha "09f9c57cb27acc53ac5cb241e72f9b582d202bc3"}}
+         :sha "09f9c57cb27acc53ac5cb241e72f9b582d202bc3"}
+        ;; Cross-actor supply-chain-linkage contract (ADR-2607999950,
+        ;; extended by ADR-2607999960): `automotive.governor`
+        ;; independently re-verifies each OPTIONAL entry of
+        ;; `:upstream-part-pedigrees` (a `kotoba.pedigree` record an
+        ;; upstream isic-2930 part-lot issued via `autoparts.export/
+        ;; pedigree-for-part-lot`) before accepting it as evidence a
+        ;; vehicle's incoming part-lot clears this actor's own
+        ;; acceptance floor. A real pinned git-coordinate dep (not
+        ;; :local/root), same reasoning as kami-engine-vehicle-designer
+        ;; above -- SAME SHA `cloud-itonami-isic-2930`'s own deps.edn
+        ;; pins (the SHA that added :pedigree/upstream chaining
+        ;; support).
+        io.github.kotoba-lang/pedigree
+        {:git/url "https://github.com/kotoba-lang/pedigree.git"
+         :sha "f85784211422a651fea26f448f601abfba2e7d61"}}
  :aliases
  {;; offline workspace dev -- pin transitive langchain to local checkout
   :dev {:override-deps
@@ -35,8 +50,43 @@
                       {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
          :main-opts ["-m" "cognitect.test-runner"]
          :exec-fn cognitect.test-runner.api/test}
+  ;; ADR-2607999960's critical end-to-end proof: a GENUINE cross-repo
+  ;; call into cloud-itonami-isic-2930's own `autoparts.export`/
+  ;; `autoparts.robotics` (a real part-lot -> a real physics-2d
+  ;; simulation -> a real kotoba.pedigree record), fed as plain EDN
+  ;; into this actor's governor -- and, for the genuine 2-hop proof,
+  ;; ALSO a real cross-repo call one hop further back into
+  ;; cloud-itonami-isic-2410's own `steelworks.export`/`steelworks.
+  ;; robotics` (a real heat -> a real physics-2d simulation -> a real
+  ;; kotoba.pedigree record), attached to the part-lot as its own
+  ;; `:upstream-pedigree` BEFORE calling isic-2930's `pedigree-for-
+  ;; part-lot`, so the resulting part pedigree genuinely embeds the
+  ;; steel pedigree (`:pedigree/upstream`). isic-2410 is needed
+  ;; directly here (not only transitively through isic-2930) because
+  ;; tools.deps does NOT compose another :local/root dependency's own
+  ;; ALIAS-scoped deps -- isic-2930's OWN `:cross-repo-test` alias
+  ;; dependency on isic-2410 is invisible from here; this alias
+  ;; declares both siblings itself, the same workspace-sibling
+  ;; :local/root convention `io.github.kotoba-lang/langgraph`/
+  ;; `robotics` above already use, one org level up instead of across
+  ;; orgs. Kept out of the default :test alias (and its own
+  ;; test-cross-repo/ source root) so plain `clojure -M:dev:test`
+  ;; never REQUIRES same-org sibling checkouts a casual fork of just
+  ;; this repo would not have. Still no live network call at runtime:
+  ;; this is a build-time classpath dependency exercised by tests, the
+  ;; same category as every other :local/root dep in this fleet.
+  :cross-repo-test
+  {:extra-paths ["test-cross-repo"]
+   :extra-deps {io.github.cognitect-labs/test-runner
+                {:git/tag "v0.5.1" :git/sha "dfb30dd"}
+                io.github.cloud-itonami/cloud-itonami-isic-2930
+                {:local/root "../cloud-itonami-isic-2930"}
+                io.github.cloud-itonami/cloud-itonami-isic-2410
+                {:local/root "../cloud-itonami-isic-2410"}}
+   :main-opts ["-m" "cognitect.test-runner" "-d" "test-cross-repo"]
+   :exec-fn cognitect.test-runner.api/test}
   ;; static analysis -- clj-kondo from deps (no binary), errors fail CI.
   :lint {:replace-deps {clj-kondo/clj-kondo {:mvn/version "2024.11.14"}}
          :main-opts    ["-m" "clj-kondo.main"
-                        "--lint" "src" "test"
+                        "--lint" "src" "test" "test-cross-repo"
                         "--fail-level" "error"]}}}
