@@ -33,7 +33,19 @@
   jurisdictional basis, approved by whom' is always a query over an
   immutable log -- the audit trail a community trusting a motor-
   vehicle manufacturer needs, and the evidence a manufacturer needs if
-  a dispatch or conformity-certificate decision is later disputed."
+  a dispatch or conformity-certificate decision is later disputed.
+
+  `:upstream-part-pedigrees` (ADR-2607999960, the second applied link
+  of the ADR-2607999950 cross-actor supply-chain-linkage pattern) is
+  an OPTIONAL vehicle field -- a VECTOR of `kotoba.pedigree` records
+  (a vehicle has many parts, unlike `autoparts.store`'s single
+  `:upstream-pedigree` on a part-lot) an upstream `cloud-itonami-
+  isic-2930` part-lot issued via `autoparts.export/pedigree-for-part-
+  lot`, attached via the SAME general-purpose `:vehicle/intake`+
+  `:patch` mechanism every other vehicle field already uses (no new
+  op/effect needed). Absent on every vehicle that predates this ADR;
+  `automotive.governor`'s new check treats its absence as a no-op, so
+  this is purely additive on both backends."
   (:require #?(:clj  [clojure.edn :as edn]
                :cljs [cljs.reader :as edn])
             [automotive.registry :as registry]
@@ -239,6 +251,7 @@
 (defn- vehicle->tx [{:keys [id vehicle-name emissions-deviation-actual emissions-deviation-min emissions-deviation-max
                              class powertrain curb-mass-kg sim-decel-g sim-crush-distance-m
                              eol-defect-unresolved? robotics-sim-verified? robotics-sim-record
+                             upstream-part-pedigrees
                              vehicle-dispatched? conformity-certified?
                              jurisdiction status dispatch-number evidence-number]}]
   (cond-> {:vehicle/id id}
@@ -254,6 +267,7 @@
     (some? eol-defect-unresolved?)              (assoc :vehicle/eol-defect-unresolved? eol-defect-unresolved?)
     (some? robotics-sim-verified?)               (assoc :vehicle/robotics-sim-verified? robotics-sim-verified?)
     (some? robotics-sim-record)                  (assoc :vehicle/robotics-sim-record (enc robotics-sim-record))
+    (some? upstream-part-pedigrees)              (assoc :vehicle/upstream-part-pedigrees (enc upstream-part-pedigrees))
     (some? vehicle-dispatched?)                 (assoc :vehicle/vehicle-dispatched? vehicle-dispatched?)
     (some? conformity-certified?)               (assoc :vehicle/conformity-certified? conformity-certified?)
     jurisdiction                                (assoc :vehicle/jurisdiction jurisdiction)
@@ -267,6 +281,7 @@
    :vehicle/class :vehicle/powertrain :vehicle/curb-mass-kg
    :vehicle/sim-decel-g :vehicle/sim-crush-distance-m
    :vehicle/eol-defect-unresolved? :vehicle/robotics-sim-verified? :vehicle/robotics-sim-record
+   :vehicle/upstream-part-pedigrees
    :vehicle/vehicle-dispatched? :vehicle/conformity-certified?
    :vehicle/jurisdiction :vehicle/status :vehicle/dispatch-number :vehicle/evidence-number])
 
@@ -283,6 +298,7 @@
      :eol-defect-unresolved? (boolean (:vehicle/eol-defect-unresolved? m))
      :robotics-sim-verified? (boolean (:vehicle/robotics-sim-verified? m))
      :robotics-sim-record (dec* (:vehicle/robotics-sim-record m))
+     :upstream-part-pedigrees (dec* (:vehicle/upstream-part-pedigrees m))
      :vehicle-dispatched? (boolean (:vehicle/vehicle-dispatched? m))
      :conformity-certified? (boolean (:vehicle/conformity-certified? m))
      :jurisdiction (:vehicle/jurisdiction m) :status (:vehicle/status m)

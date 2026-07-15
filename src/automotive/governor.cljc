@@ -11,18 +11,19 @@
   motor-vehicle-manufacturer analog of `cloud-itonami-isic-6512`'s
   CasualtyGovernor.
 
-  Seven checks, in priority order, ALL HARD violations: a human approver
+  Eight checks, in priority order, ALL HARD violations: a human approver
   CANNOT override them (you don't get to approve your way past a
   fabricated type-approval spec-basis, incomplete evidence, a robot
   CAE/assembly-line simulation that never ran or that independently
   re-checks out-of-tolerance, an out-of-spec vehicle, an unresolved
-  end-of-line defect, or a double dispatch/certificate-issuance). The
-  confidence/actuation gate is SOFT: it asks a human to look (low
-  confidence / actuation), and the human may approve -- but see
-  `automotive.phase`: for `:stake :actuation/dispatch-vehicle`/
-  `:actuation/issue-conformity-certificate` (a real safety-critical act)
-  NO phase ever allows auto-commit either. Two independent layers agree
-  that actuation is always a human call.
+  end-of-line defect, an upstream part-lot pedigree whose shape or
+  claims fail independent re-verification, or a double dispatch/
+  certificate-issuance). The confidence/actuation gate is SOFT: it
+  asks a human to look (low confidence / actuation), and the human may
+  approve -- but see `automotive.phase`: for `:stake :actuation/
+  dispatch-vehicle`/`:actuation/issue-conformity-certificate` (a real
+  safety-critical act) NO phase ever allows auto-commit either. Two
+  independent layers agree that actuation is always a human call.
 
     1. Spec-basis                  -- did the requirements proposal cite
                                        an OFFICIAL source (`automotive.
@@ -109,7 +110,44 @@
                                        op against an unscreened
                                        vehicle -- see this ns's own
                                        test suite.
-    6. Confidence floor / actuation
+    6. Upstream part pedigree claims
+       out of tolerance              -- ADR-2607999960's second
+                                       applied link of the
+                                       ADR-2607999950 cross-actor
+                                       supply-chain-linkage pattern:
+                                       for `:actuation/dispatch-
+                                       vehicle`, when the vehicle
+                                       carries an OPTIONAL
+                                       `:upstream-part-pedigrees` (a
+                                       VECTOR of `kotoba.pedigree`
+                                       records upstream `cloud-
+                                       itonami-isic-2930` part-lots
+                                       issued via `autoparts.export/
+                                       pedigree-for-part-lot`),
+                                       INDEPENDENTLY re-verify EACH
+                                       one -- never trust the upstream
+                                       actor's claim at face value:
+                                       (a) `kotoba.pedigree/valid?` on
+                                       its own shape (recursively
+                                       shape-valid through any
+                                       embedded `:pedigree/upstream`,
+                                       e.g. a genuine steel-heat ->
+                                       part-lot -> vehicle 2-hop
+                                       chain), and (b) its
+                                       `:proof-load-force-n` claim
+                                       actually clears THIS actor's
+                                       own disclosed acceptance floor
+                                       for upstream parts
+                                       (`min-upstream-part-proof-
+                                       load-n`, below). When
+                                       `:upstream-part-pedigrees` is
+                                       ABSENT or empty this check is a
+                                       NO-OP -- existing proposals
+                                       with no upstream linkage
+                                       continue to dispatch exactly as
+                                       before this ADR (additive,
+                                       never a breaking change).
+    7. Confidence floor / actuation
        gate                          -- LLM confidence below threshold,
                                        OR the op is `:actuation/
                                        dispatch-vehicle`/`:actuation/
@@ -131,9 +169,37 @@
   (:require [automotive.facts :as facts]
             [automotive.registry :as registry]
             [automotive.robotics :as robotics]
-            [automotive.store :as store]))
+            [automotive.store :as store]
+            [kotoba.pedigree :as pedigree]))
 
 (def confidence-floor 0.6)
+
+(def ^:const min-upstream-part-proof-load-n
+  "Real, disclosed minimum acceptable upstream part-lot weld-joint/
+  fastener proof load (N -- a `kotoba.pedigree` `:proof-load-force-n`
+  claim from a `cloud-itonami-isic-2930`-issued pedigree,
+  ADR-2607999960) this actor requires before accepting an incoming
+  part-lot as suitable to build into a vehicle.
+
+  Set EQUAL to `autoparts.robotics/min-proof-load-n` (3500 N) --
+  disclosed reasoning, not a fresh margin-derived number: unlike
+  `autoparts.governor/min-upstream-tensile-load-n` (which adds a 20%
+  margin above ITS OWN downstream joint floor because raw steel
+  feedstock has not yet been welded/fastened), this actor has NO
+  independent joint/fastener proof-load engineering model of its own
+  -- that physics lives entirely upstream, in `autoparts.robotics` /
+  `kami-engine-vehicle-designer`. The honest floor disclosed here is
+  to require, at minimum, EXACTLY what the parts manufacturer's own
+  governor already gated real-world shipment on
+  (`autoparts.governor/robotics-simulation-violations` independently
+  re-verifies this same floor before a part-lot may ever ship) --
+  never accept a part pedigree an OEM's own supplier would not
+  already have shipped. Stacking a FURTHER margin on top here would
+  double-count a margin `autoparts.governor` already enforced before
+  this pedigree could exist at all -- this actor is the part's
+  RECEIVER, not a second feedstock-to-joint hop like isic-2930's own
+  upstream-steel check."
+  3500.0)
 
 (def high-stakes
   "Stakes grave enough to always require a human, even when clean.
@@ -229,6 +295,58 @@
       [{:rule :end-of-line-defect-unresolved
         :detail "未解決の完成検査欠陥がある状態での適合証明書発行提案は進められない"}])))
 
+(defn- upstream-part-pedigree-violations-at
+  "Independent re-verification of a SINGLE `:upstream-part-pedigrees`
+  entry -- see `upstream-part-pedigrees-claims-out-of-tolerance-
+  violations` below. `idx` is only used to make each violation's
+  `:detail` identify WHICH entry failed when a vehicle carries more
+  than one."
+  [idx p]
+  (cond
+    (not (pedigree/valid? p))
+    [{:rule :upstream-part-pedigree-invalid-shape
+      :detail (str "upstream-part-pedigrees[" idx "] がkotoba.pedigreeの形状検証に失敗")}]
+
+    (let [v (pedigree/claim-value p :proof-load-force-n)]
+      (or (not (number? v)) (< v min-upstream-part-proof-load-n)))
+    [{:rule :upstream-part-pedigree-claims-out-of-tolerance
+      :detail (str "upstream-part-pedigrees[" idx "](" (:pedigree/id p)
+                   ")の実測プルーフロード(" (pedigree/claim-value p :proof-load-force-n)
+                   "N)が受入基準(" min-upstream-part-proof-load-n "N)を下回る")}]))
+
+(defn- upstream-part-pedigrees-claims-out-of-tolerance-violations
+  "ADR-2607999960's second applied link of the ADR-2607999950
+  cross-actor supply-chain-linkage pilot. For `:actuation/dispatch-
+  vehicle`: when the vehicle carries an OPTIONAL `:upstream-part-
+  pedigrees` (a VECTOR of `kotoba.pedigree` records upstream
+  `cloud-itonami-isic-2930` part-lots issued via `autoparts.export/
+  pedigree-for-part-lot` and a test/demo/orchestration script attached
+  to this vehicle as plain EDN data -- never a live network call),
+  INDEPENDENTLY re-verify EACH one, never trusting the upstream
+  actor's claim at face value: (a) the pedigree's own shape
+  (`kotoba.pedigree/valid?`, recursively shape-valid through any
+  embedded `:pedigree/upstream` -- a malformed/incomplete pedigree,
+  at ANY hop of a chain, is never accepted), and (b) its
+  `:proof-load-force-n` claim actually clears THIS actor's own
+  disclosed acceptance floor for upstream parts
+  (`min-upstream-part-proof-load-n`) -- the SAME 'ground truth, not
+  self-report' discipline `robotics-simulation-violations`/
+  `vehicle-emissions-out-of-range-violations` above already apply
+  WITHIN this actor, now extended ACROSS actors, the same as
+  `autoparts.governor/upstream-pedigree-claims-out-of-tolerance-
+  violations` already does for isic-2930 accepting isic-2410.
+
+  When `:upstream-part-pedigrees` is ABSENT or empty this check is a
+  NO-OP -- existing proposals with no upstream linkage continue to
+  dispatch exactly as before this ADR (additive, never a breaking
+  change)."
+  [{:keys [op subject]} st]
+  (when (= op :actuation/dispatch-vehicle)
+    (let [a (store/vehicle st subject)
+          pedigrees (:upstream-part-pedigrees a)]
+      (when (seq pedigrees)
+        (into [] (mapcat upstream-part-pedigree-violations-at (range) pedigrees))))))
+
 (defn- already-dispatched-violations
   "For `:actuation/dispatch-vehicle`, refuses to dispatch a vehicle
   action for the SAME vehicle twice, off a dedicated `:vehicle-
@@ -260,6 +378,7 @@
                            (robotics-simulation-violations request st)
                            (vehicle-emissions-out-of-range-violations request st)
                            (end-of-line-defect-unresolved-violations request proposal st)
+                           (upstream-part-pedigrees-claims-out-of-tolerance-violations request st)
                            (already-dispatched-violations request st)
                            (already-certified-violations request st)))
         conf (:confidence proposal 0.0)
