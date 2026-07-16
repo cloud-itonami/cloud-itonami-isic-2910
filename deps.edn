@@ -50,6 +50,18 @@
                       {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
          :main-opts ["-m" "cognitect.test-runner"]
          :exec-fn cognitect.test-runner.api/test}
+  ;; ADR-2607999970 extends this to the genuine FULL 3-hop, 4-actor
+  ;; chain (iron ore -> steel -> part -> vehicle): ALSO a real
+  ;; cross-repo call two hops further back into cloud-itonami-
+  ;; isic-0710's own `ironops.export`/`ironops.store` (a real
+  ;; production record, written and read back through that repo's OWN
+  ;; store -> a real kotoba.pedigree record), attached to the heat as
+  ;; its own `:upstream-ore-pedigree` BEFORE calling isic-2410's
+  ;; `pedigree-for-heat`, so the part pedigree this actor receives
+  ;; carries a genuinely 2-level-deep `:pedigree/upstream` chain
+  ;; (steel embeds ore) beneath ITS OWN top level. isic-0710 is
+  ;; needed directly here too, same reasoning as isic-2410 below.
+  ;;
   ;; ADR-2607999960's critical end-to-end proof: a GENUINE cross-repo
   ;; call into cloud-itonami-isic-2930's own `autoparts.export`/
   ;; `autoparts.robotics` (a real part-lot -> a real physics-2d
@@ -82,7 +94,9 @@
                 io.github.cloud-itonami/cloud-itonami-isic-2930
                 {:local/root "../cloud-itonami-isic-2930"}
                 io.github.cloud-itonami/cloud-itonami-isic-2410
-                {:local/root "../cloud-itonami-isic-2410"}}
+                {:local/root "../cloud-itonami-isic-2410"}
+                io.github.cloud-itonami/cloud-itonami-isic-0710
+                {:local/root "../cloud-itonami-isic-0710"}}
    :main-opts ["-m" "cognitect.test-runner" "-d" "test-cross-repo"]
    :exec-fn cognitect.test-runner.api/test}
   ;; static analysis -- clj-kondo from deps (no binary), errors fail CI.
