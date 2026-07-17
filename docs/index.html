@@ -1,63 +1,64 @@
-<html><head><meta charset="utf-8"><title>cloud-itonami-isic-2910 · motor-vehicle plant</title><style>
-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.ok { color: #137a3f; }
-body { font-family: system-ui,-apple-system,sans-serif; margin: 0; color: #1a1a1a; background: #fafafa; }
-header.bar { display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: #fff; border-bottom: 1px solid #e5e5e5; }
-th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #f0f0f0; }
-h2 { margin-top: 0; font-size: 15px; }
-.warn { color: #b25c00; background: #fff8e1; padding: 2px 6px; border-radius: 4px; }
-main { max-width: 980px; margin: 24px auto; padding: 0 20px; }
-header.bar h1 { font-size: 18px; margin: 0; font-weight: 600; }
-.muted { color: #888; font-size: 13px; }
-.critical { color: #fff; background: #b3261e; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
-.card { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-.err { color: #b3261e; background: #fbe9e7; padding: 2px 6px; border-radius: 4px; }
-th { font-weight: 600; color: #555; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
-header.bar .badge { margin-left: auto; font-size: 12px; color: #666; }
-code { font-size: 12px; background: #f4f4f4; padding: 1px 4px; border-radius: 3px; }
-</style></head><body>
-<header class="bar">
-  <h1>Motor-vehicle plant (ISIC 2910) — Operator Console</h1>
-  <span class="badge">read-only sample · governor-gated · never dispatches hardware</span>
-</header>
-<main>
-  <section class="card">
-    <h2>Vehicles</h2>
-    <p class="muted">Demo snapshot — live data from <code>automotive.store</code> / <code>clojure -M:dev:run</code>.</p>
-    <table>
-      <thead><tr><th>Vehicle</th><th>Name</th><th>Jurisdiction</th><th>Emissions</th><th>EOL</th><th>Status</th></tr></thead>
-      <tbody>
-        <tr><td>vehicle-1</td><td>Sakura Compact Sedan CS-04</td><td>JPN</td><td class="ok">0.05 ∈ [-0.10,0.10]</td><td class="ok">resolved</td><td class="ok">ready</td></tr>
-        <tr><td>vehicle-2</td><td>Atlantis Crossover CX-12</td><td>ATL</td><td class="ok">in-spec</td><td class="ok">—</td><td><span class="err">no spec-basis</span></td></tr>
-        <tr><td>vehicle-3</td><td>鈴木コンパクトカー SC-07</td><td>JPN</td><td><span class="err">0.35 out of range</span></td><td class="ok">—</td><td><span class="warn">HARD hold on dispatch</span></td></tr>
-        <tr><td>vehicle-4</td><td>田中SUVモデル SV-03</td><td>JPN</td><td class="ok">in-spec</td><td><span class="err">unresolved</span></td><td><span class="critical">EOL hold</span></td></tr>
-      </tbody>
-    </table>
-  </section>
-  <section class="card">
-    <h2>Action gate (Automotive Governor)</h2>
-    <p class="muted">HARD holds cannot be overridden. Actuation always escalates to a human homologation engineer.</p>
-    <table>
-      <thead><tr><th>Op</th><th>Stake</th><th>Gate</th></tr></thead>
-      <tbody>
-        <tr><td><code>:vehicle/intake</code></td><td>none</td><td><span class="ok">phase-3 auto when clean</span></td></tr>
-        <tr><td><code>:type-approval-rules/verify</code></td><td>none</td><td><span class="warn">human approval · no fabricated type-approval rules</span></td></tr>
-        <tr><td><code>:end-of-line-quality/screen</code></td><td>none</td><td><span class="critical">HARD hold if unresolved defect</span></td></tr>
-        <tr><td><code>:actuation/dispatch-vehicle</code></td><td class="critical">safety-critical</td><td><span class="warn">always human · emissions + evidence checks</span></td></tr>
-        <tr><td><code>:actuation/issue-conformity-certificate</code></td><td class="critical">safety-critical</td><td><span class="warn">always human · EOL + double-issue guard</span></td></tr>
-      </tbody>
-    </table>
-  </section>
-  <section class="card">
-    <h2>Social hand-off</h2>
-    <p class="muted">Audit package for type-approval inspectors / market-regulator inspectors — <code>automotive.export/audit-package</code> and <code>package-&gt;csv-bundle</code> (vehicles / ledger / dispatches / conformity-certificates CSV).</p>
-    <table>
-      <thead><tr><th>Artifact</th><th>Kind</th><th>Note</th></tr></thead>
-      <tbody>
-        <tr><td>JPN-VHL-000000</td><td>vehicle-dispatch-draft</td><td>unsigned · plant signs offline</td></tr>
-        <tr><td>JPN-COC-000000</td><td>conformity-certificate-draft</td><td>unsigned · type-approval authority submission is plant act</td></tr>
-      </tbody>
-    </table>
-  </section>
-</main>
-</body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manufacture of Motor Vehicles | cloud-itonami-isic-2910</title>
+  <meta name="description" content="Manufacture of Motor Vehicles — governed open occupation blueprint (ISIC 2910).">
+  <style>
+    :root { --bg:#f5f7fa; --card:#fff; --fg:#1b1f24; --muted:#57606a; --accent:#1e3a8a; --line:#d0d7de; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg:#0d1117; --card:#161b22; --fg:#e6edf3; --muted:#8d96a0; --accent:#58a6ff; --line:#30363d; }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: linear-gradient(135deg, var(--bg), #c3cfe2);
+           min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; color: var(--fg); }
+    .container { max-width: 800px; width: 100%; background: var(--card); border-radius: 12px;
+                 box-shadow: 0 10px 40px rgba(0,0,0,.1); padding: 48px 40px; border: 1px solid var(--line); }
+    h1 { font-size: 1.85rem; color: var(--accent); margin-bottom: 8px; }
+    .badge { display: inline-block; background: #e0e7ff; color: var(--accent); padding: 3px 10px;
+             border-radius: 4px; font-size: .85rem; font-weight: 600; margin-bottom: 20px; }
+    @media (prefers-color-scheme: dark) { .badge { background: #1f2a44; } }
+    .pitch { border-left: 4px solid var(--accent); padding-left: 16px; margin: 20px 0 28px; color: var(--muted); line-height: 1.7; }
+    .pitch p { margin-bottom: 10px; }
+    .meta { font-size: .9rem; color: var(--muted); margin-bottom: 24px; }
+    .meta code { background: var(--bg); padding: 1px 6px; border-radius: 4px; }
+    .cta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }
+    @media (max-width: 560px) { .cta { grid-template-columns: 1fr; } }
+    .cta a { display: block; text-align: center; text-decoration: none; padding: 14px 18px;
+             border-radius: 8px; font-weight: 600; }
+    .cta .primary { background: var(--accent); color: #fff; }
+    .cta .secondary { border: 1.5px solid var(--accent); color: var(--accent); }
+    ul.links { list-style: none; font-size: .95rem; }
+    ul.links li { margin: 8px 0; }
+    a { color: var(--accent); }
+    footer { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line);
+             font-size: .85rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Manufacture of Motor Vehicles</h1>
+    <div class="badge">ISIC 2910 · maturity implemented</div>
+    <div class="pitch">
+      <p>Open Business Blueprint for ISIC Rev.5 2910: manufacture of motor vehicles -- vehicle assembly, end-of-line quality screening and Certificate-of-Conformity issuance for a community motor-vehicle plant.</p>
+      <p>This repository publishes a motor-vehicle-manufacturing actor -- vehicle intake, per-jurisdiction type-approval/homologation rules verification, end-of-line-defect screening, robot vehicle-dispatch and Certificate-of-Conformity finalization -- as an OSS business that any qualified motor-vehicle plant can fork, deploy, run, improve and sell, so a plant keeps its own construction and type-approval history instead of renting a closed MES / quality SaaS.</p>
+      <p>Built on this workspace's [langgraph](https://github.com/kotoba-lang/langgraph) StateGraph runtime (portable .cljc, supervised superstep loop, interrupts, Datomic/in-mem checkpoints) -- the same actor pattern as every prior actor in this fleet -- here it is Automotive Advisor ⊣ Automotive Governor.</p>
+    </div>
+    <p class="meta">Domain <code>manufacturing/motor-vehicles</code> · Governor <code>automotive-governor</code> · License <code>AGPL-3.0-or-later</code></p>
+    <div class="cta">
+      <a class="primary" href="https://itonami.cloud/isco-1212/">Fork + self-host claim</a>
+      <a class="secondary" href="https://itonami.cloud/docs/go-live.md">Paid go-live path</a>
+    </div>
+    <ul class="links">
+      <li><a href="https://github.com/cloud-itonami/cloud-itonami-isic-2910">GitHub repository</a></li>
+      <li><a href="./operator-quickstart.md">Operator quickstart</a></li>
+      <li><a href="https://github.com/cloud-itonami/cloud-itonami-isic-2910/blob/main/blueprint.edn">blueprint.edn</a></li>
+      <li><a href="https://github.com/cloud-itonami/cloud-itonami-isic-2910/blob/main/README.md">README</a></li>
+    </ul>
+    <footer>
+      <p>Open occupation blueprint — no invented usage or revenue metrics. Product face generated for impl-product maturity (Lane C).</p>
+    </footer>
+  </main>
+</body>
+</html>
