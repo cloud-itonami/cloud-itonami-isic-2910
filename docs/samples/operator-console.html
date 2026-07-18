@@ -23,14 +23,14 @@ code { font-size: 12px; background: #f4f4f4; padding: 1px 4px; border-radius: 3p
 <main>
   <section class="card">
     <h2>Vehicles</h2>
-    <p class="muted">Demo snapshot — live data from <code>automotive.store</code> / <code>clojure -M:dev:run</code>.</p>
+    <p class="muted">Demo snapshot — build-time-generated from <code>automotive.store</code> via <code>automotive.render-html</code> (<code>clojure -M:dev:render-html</code>), regenerated nightly.</p>
     <table>
       <thead><tr><th>Vehicle</th><th>Name</th><th>Jurisdiction</th><th>Emissions</th><th>EOL</th><th>Status</th></tr></thead>
       <tbody>
-        <tr><td>vehicle-1</td><td>Sakura Compact Sedan CS-04</td><td>JPN</td><td class="ok">0.05 ∈ [-0.10,0.10]</td><td class="ok">resolved</td><td class="ok">ready</td></tr>
-        <tr><td>vehicle-2</td><td>Atlantis Crossover CX-12</td><td>ATL</td><td class="ok">in-spec</td><td class="ok">—</td><td><span class="err">no spec-basis</span></td></tr>
-        <tr><td>vehicle-3</td><td>鈴木コンパクトカー SC-07</td><td>JPN</td><td><span class="err">0.35 out of range</span></td><td class="ok">—</td><td><span class="warn">HARD hold on dispatch</span></td></tr>
-        <tr><td>vehicle-4</td><td>田中SUVモデル SV-03</td><td>JPN</td><td class="ok">in-spec</td><td><span class="err">unresolved</span></td><td><span class="critical">EOL hold</span></td></tr>
+        <tr><td>vehicle-1</td><td>Sakura Compact Sedan CS-04</td><td>JPN</td><td><span class="ok">0.05 &isin; [-0.10,0.10]</span></td><td><span class="ok">resolved</span></td><td><span class="ok">ready</span></td></tr>
+        <tr><td>vehicle-2</td><td>Atlantis Crossover CX-12</td><td>ATL</td><td><span class="ok">0.05 &isin; [-0.10,0.10]</span></td><td><span class="ok">resolved</span></td><td><span class="err">no spec-basis</span></td></tr>
+        <tr><td>vehicle-3</td><td>鈴木コンパクトカー SC-07</td><td>JPN</td><td><span class="err">0.35 out of range</span></td><td><span class="ok">resolved</span></td><td><span class="warn">HARD hold on dispatch</span></td></tr>
+        <tr><td>vehicle-4</td><td>田中SUVモデル SV-03</td><td>JPN</td><td><span class="ok">0.05 &isin; [-0.10,0.10]</span></td><td><span class="err">unresolved</span></td><td><span class="critical">EOL hold</span></td></tr>
       </tbody>
     </table>
   </section>
@@ -41,10 +41,11 @@ code { font-size: 12px; background: #f4f4f4; padding: 1px 4px; border-radius: 3p
       <thead><tr><th>Op</th><th>Stake</th><th>Gate</th></tr></thead>
       <tbody>
         <tr><td><code>:vehicle/intake</code></td><td>none</td><td><span class="ok">phase-3 auto when clean</span></td></tr>
-        <tr><td><code>:type-approval-rules/verify</code></td><td>none</td><td><span class="warn">human approval · no fabricated type-approval rules</span></td></tr>
+        <tr><td><code>:type-approval-rules/verify</code></td><td>none</td><td><span class="warn">human approval &middot; no fabricated type-approval rules</span></td></tr>
         <tr><td><code>:end-of-line-quality/screen</code></td><td>none</td><td><span class="critical">HARD hold if unresolved defect</span></td></tr>
-        <tr><td><code>:actuation/dispatch-vehicle</code></td><td class="critical">safety-critical</td><td><span class="warn">always human · emissions + evidence checks</span></td></tr>
-        <tr><td><code>:actuation/issue-conformity-certificate</code></td><td class="critical">safety-critical</td><td><span class="warn">always human · EOL + double-issue guard</span></td></tr>
+        <tr><td><code>:robotics/simulate-assembly-line</code></td><td>none</td><td><span class="warn">human approval &middot; real physics-2d CAE check</span></td></tr>
+        <tr><td><code>:actuation/dispatch-vehicle</code></td><td class="critical">safety-critical</td><td><span class="warn">always human &middot; emissions + robotics-sim checks</span></td></tr>
+        <tr><td><code>:actuation/issue-conformity-certificate</code></td><td class="critical">safety-critical</td><td><span class="warn">always human &middot; EOL + double-issue guard</span></td></tr>
       </tbody>
     </table>
   </section>
