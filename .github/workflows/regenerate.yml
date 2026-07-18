@@ -1,0 +1,70 @@
+# Nightly regeneration -- rebuild docs/samples/operator-console.html
+# through the REAL actor (automotive.render-html, driving
+# automotive.operation/automotive.governor/automotive.store the same
+# way automotive.sim/automotive.export-run do) and commit only when
+# the rendered console actually changed. Closes flagship checklist
+# item 2 (ADR-2607189300 at com-junkawasaki/root, rollout ledger seq 3
+# diagnosis / seq 4 fix): this page's own caption claimed "live data"
+# while the file was in fact a one-time hand-pasted transcript, never
+# regenerated since the single commit that added it.
+#
+# JVM Clojure (clojure -M), not nbb -- this repo's whole actor stack
+# (automotive.* + its kotoba-lang/robotics + kami-engine-vehicle-designer
+# physics-2d dependency chain) is JVM-only; there is no nbb/cljs
+# toolchain in this repo to extend, unlike the isic-6399/6310/7810
+# generate.cljs template this workflow otherwise mirrors (checkout
+# layout, commit-only-on-change discipline).
+#
+# Fork note: this runs on the default GITHUB_TOKEN (contents: write).
+# If your org disables Actions, run `clojure -M:dev:render-html` from
+# any scheduler (see docs/operator-quickstart.md).
+name: regenerate-console
+on:
+  schedule:
+    - cron: '37 17 * * *'   # 02:37 JST nightly (off-minute on purpose)
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: orgs/cloud-itonami/cloud-itonami-isic-2910
+      - uses: actions/checkout@v4
+        with: {repository: kotoba-lang/html, path: orgs/kotoba-lang/html}
+      - uses: actions/checkout@v4
+        with: {repository: kotoba-lang/css, path: orgs/kotoba-lang/css}
+      - uses: actions/checkout@v4
+        with: {repository: kotoba-lang/langchain, path: orgs/kotoba-lang/langchain}
+      - uses: actions/checkout@v4
+        with: {repository: kotoba-lang/langgraph, path: orgs/kotoba-lang/langgraph}
+      - uses: actions/checkout@v4
+        with: {repository: kotoba-lang/robotics, path: orgs/kotoba-lang/robotics}
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21" }
+      - uses: DeLaGuardo/setup-clojure@13.0
+        with: { cli: latest }
+      - name: regenerate through the real actor
+        working-directory: orgs/cloud-itonami/cloud-itonami-isic-2910
+        run: clojure -M:dev:render-html
+      - name: verify (real output, not scaffolding)
+        working-directory: orgs/cloud-itonami/cloud-itonami-isic-2910
+        run: |
+          grep -q 'automotive.render-html' docs/samples/operator-console.html
+          grep -q '<tbody>' docs/samples/operator-console.html
+          test "$(wc -l < docs/samples/operator-console.html)" -gt 30
+          echo "operator console sanity ok"
+      - name: commit when changed
+        working-directory: orgs/cloud-itonami/cloud-itonami-isic-2910
+        run: |
+          if ! git diff --quiet docs/; then
+            git config user.name "regenerate-console[bot]"
+            git config user.email "noreply@github.com"
+            git add docs/
+            git commit -m "chore(console): nightly regeneration through the real actor"
+            git push
+          else
+            echo "console unchanged"
+          fi

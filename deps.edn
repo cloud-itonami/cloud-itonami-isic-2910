@@ -45,6 +45,10 @@
   ;; clojure -M:dev:run  -> drive the demo through one OperationActor
   :run {:main-opts ["-m" "automotive.sim"]}
   :export {:main-opts ["-m" "automotive.export-run"]}
+  ;; clojure -M:dev:render-html -> build-time regeneration of
+  ;; docs/samples/operator-console.html through the real actor
+  ;; (ADR-2607189300 checklist item 2 / flagship-wave5 ledger seq 4).
+  :render-html {:main-opts ["-m" "automotive.render-html"]}
   :test {:extra-paths ["test"]
          :extra-deps {io.github.cognitect-labs/test-runner
                       {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
