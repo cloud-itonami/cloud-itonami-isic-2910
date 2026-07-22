@@ -6,6 +6,10 @@
   (is (some? (facts/spec-basis "JPN")))
   (is (string? (:provenance (facts/spec-basis "JPN")))))
 
+(deftest kor-has-a-spec-basis
+  (is (some? (facts/spec-basis "KOR")))
+  (is (string? (:provenance (facts/spec-basis "KOR")))))
+
 (deftest unknown-jurisdiction-has-no-fabricated-spec-basis
   (is (nil? (facts/spec-basis "ATL"))))
 

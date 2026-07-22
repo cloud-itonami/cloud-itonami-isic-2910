@@ -44,7 +44,35 @@
           :required-evidence ["CAE-Simulationsbericht (CAE-simulation-report)"
                               "Emissionsprüfbericht (emissions-test-report)"
                               "Endkontroll-Rückverfolgbarkeitsnachweis (end-of-line-quality-chain-of-custody-record)"
-                              "Werkstoffzertifikat (material-certification-record)"]}})
+                              "Werkstoffzertifikat (material-certification-record)"]}
+   ;; South Korea (KOR) -- Hyundai/Kia/GM Korea manufacturing base. Cite
+   ;; ONLY what was independently re-fetched+read this session directly
+   ;; from law.go.kr's Open API (site search UI is unreliable; the DRF
+   ;; XML endpoint is not): 자동차관리법 (Motor Vehicle Management Act,
+   ;; MST 286989, 소관부처=국토교통부/MOLIT, 시행일자 2026-06-16) 제29조
+   ;; ("자동차는 ... 자동차안전기준 ... 에 적합하지 아니하면 운행하지
+   ;; 못한다" -- vehicles may not operate unless conforming to MOLIT-set
+   ;; safety standards) and 제30조 ("... 그 자동차의 형식이 자동차안전
+   ;; 기준 ... 에 적합함을 스스로 인증 (자동차자기인증) ... 하여야 한다"
+   ;; -- manufacturers self-certify conformity, a US-NHTSA-style
+   ;; self-certification regime rather than JPN/DEU-style pre-market
+   ;; type-approval). KNOWN GAP, disclosed honestly rather than
+   ;; fabricated: the Act (제32조③) only says MOLIT designates a
+   ;; "성능시험대행자" (performance-test proxy) by Ordinance/notice; the
+   ;; specific designee (commonly reported elsewhere as KATRI / 한국교통
+   ;; 안전공단) could NOT be confirmed this session -- katri.re.kr was
+   ;; unreachable (connection refused) and no law.go.kr admrul/statute
+   ;; text fetched this session names it -- so no testing-lab name is
+   ;; asserted here, only the confirmed statutory ministry (MOLIT).
+   "KOR" {:name "South Korea"
+          :owner-authority "국토교통부 (MOLIT, Ministry of Land, Infrastructure and Transport) 자동차정책과"
+          :legal-basis "자동차관리법 제29조(자동차의 구조 및 장치 등: 자동차안전기준) / 제30조(자동차의 자기인증 등) (참고)"
+          :national-spec "자동차안전기준(국토교통부령) 적합에 대한 자동차제작자등의 자기인증 (manufacturer self-certification, not pre-market type-approval)"
+          :provenance "https://www.law.go.kr/DRF/lawService.do?OC=test&target=law&MST=286989&type=XML"
+          :required-evidence ["충돌안전성 CAE 시뮬레이션 보고서 (CAE-simulation-report)"
+                              "배출가스 시험 보고서 (emissions-test-report)"
+                              "완성검사 이력 관리 기록 (end-of-line-quality-chain-of-custody-record)"
+                              "재료 인증 기록 (material-certification-record)"]}})
 
 (defn spec-basis [iso3] (get catalog iso3))
 
