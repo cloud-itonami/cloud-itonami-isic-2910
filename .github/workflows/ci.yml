@@ -5,9 +5,10 @@ name: ci
 #
 # Workspace layout: deps use :local/root to kotoba-lang/langgraph,
 # kotoba-lang/langchain and kotoba-lang/robotics (all public). CI
-# reconstructs sibling paths. (kami-engine-vehicle-designer and
-# pedigree resolve via pinned git coordinates, no sibling checkout
-# needed for those.)
+# reconstructs sibling paths. kotoba-lang/robotics itself declares
+# :local/root deps on kotoba-lang/html and kotoba-lang/css, needed
+# transitively. (kami-engine-vehicle-designer and pedigree resolve via
+# pinned git coordinates, no sibling checkout needed for those.)
 
 on:
   push:
@@ -44,6 +45,14 @@ jobs:
         with:
           repository: kotoba-lang/robotics
           path: orgs/kotoba-lang/robotics
+      - uses: actions/checkout@v4
+        with:
+          repository: kotoba-lang/html
+          path: orgs/kotoba-lang/html
+      - uses: actions/checkout@v4
+        with:
+          repository: kotoba-lang/css
+          path: orgs/kotoba-lang/css
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: "21" }
       - uses: DeLaGuardo/setup-clojure@13.0
