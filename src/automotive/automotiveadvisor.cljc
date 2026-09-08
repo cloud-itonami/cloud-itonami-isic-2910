@@ -29,7 +29,7 @@
      :confidence 0..1}"
   (:require #?(:clj  [clojure.edn :as edn]
                :cljs [cljs.reader :as edn])
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [automotive.facts :as facts]
             [automotive.registry :as registry]
             [automotive.robotics :as robotics]
