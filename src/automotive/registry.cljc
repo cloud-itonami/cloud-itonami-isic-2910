@@ -28,7 +28,7 @@
   itself (that is `automotive.operation`'s `:actuation/dispatch-
   vehicle`/`:actuation/issue-conformity-certificate`, always human-
   gated -- see README `Actuation`)."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (defn- unsigned-certificate
   "Every certificate this actor produces is UNSIGNED -- signature is the
@@ -74,7 +74,7 @@
     (throw (ex-info "vehicle-dispatch: jurisdiction required" {})))
   (when (< sequence 0)
     (throw (ex-info "vehicle-dispatch: sequence must be >= 0" {})))
-  (let [dispatch-number (str (str/upper-case jurisdiction) "-VHL-" (zero-pad sequence 6))
+  (let [dispatch-number (str (str/upper jurisdiction) "-VHL-" (zero-pad sequence 6))
         record {"record_id" dispatch-number
                 "kind" "vehicle-dispatch-draft"
                 "vehicle_id" vehicle-id
@@ -99,7 +99,7 @@
     (throw (ex-info "conformity-certificate: jurisdiction required" {})))
   (when (< sequence 0)
     (throw (ex-info "conformity-certificate: sequence must be >= 0" {})))
-  (let [evidence-number (str (str/upper-case jurisdiction) "-COC-" (zero-pad sequence 6))
+  (let [evidence-number (str (str/upper jurisdiction) "-COC-" (zero-pad sequence 6))
         record {"record_id" evidence-number
                 "kind" "conformity-certificate-draft"
                 "vehicle_id" vehicle-id
