@@ -56,10 +56,10 @@ io.github.kotoba-lang/langgraph
   :dev {:override-deps
         {io.github.kotoba-lang/langchain
          {:local/root "../../kotoba-lang/langchain"}}}
-  ;; clojure -M:dev:run  -> drive the demo through one OperationActor
+  ;; kbb -M:dev:run  -> drive the demo through one OperationActor
   :run {:main-opts ["-m" "automotive.sim"]}
   :export {:main-opts ["-m" "automotive.export-run"]}
-  ;; clojure -M:dev:render-html -> build-time regeneration of
+  ;; kbb -M:dev:render-html -> build-time regeneration of
   ;; docs/samples/operator-console.html through the real actor
   ;; (ADR-2607189300 checklist item 2 / flagship-wave5 ledger seq 4).
   :render-html {:main-opts ["-m" "automotive.render-html"]}
@@ -100,7 +100,7 @@ io.github.kotoba-lang/langgraph
   ;; :local/root convention `io.github.kotoba-lang/langgraph`/
   ;; `robotics` above already use, one org level up instead of across
   ;; orgs. Kept out of the default :test alias (and its own
-  ;; test-cross-repo/ source root) so plain `clojure -M:dev:test`
+  ;; test-cross-repo/ source root) so plain `kbb -M:dev:test`
   ;; never REQUIRES same-org sibling checkouts a casual fork of just
   ;; this repo would not have. Still no live network call at runtime:
   ;; this is a build-time classpath dependency exercised by tests, the

@@ -29,7 +29,7 @@
   integration-test` already established for the first two siblings
   one link earlier -- this file only adds the third.
 
-  Run with `clojure -M:dev:cross-repo-test`. Still no live network
+  Run with `kbb -M:dev:cross-repo-test`. Still no live network
   call between actors at runtime: this is a build-time classpath
   dependency exercised by tests, same category as every other
   `:local/root` dependency in this fleet."

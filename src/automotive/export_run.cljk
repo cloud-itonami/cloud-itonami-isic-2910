@@ -1,6 +1,6 @@
 (ns automotive.export-run
   "CLI: write a demo audit CSV bundle for social / regulatory hand-off.
-  Usage: clojure -M:dev:export [out-dir]
+  Usage: kbb -M:dev:export [out-dir]
   Default out-dir: out/audit-package"
   (:require [automotive.store :as store]
             [automotive.export :as export]

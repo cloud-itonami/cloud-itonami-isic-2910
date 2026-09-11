@@ -1,5 +1,5 @@
 (ns automotive.sim
-  "Demo driver -- `clojure -M:dev:run`. `robotics/simulate-assembly-
+  "Demo driver -- `kbb -M:dev:run`. `robotics/simulate-assembly-
   line` now actually runs `kami-engine-vehicle-designer`'s real
   `physics-2d`-backed time-stepped crash simulation, tessellated-scene
   bridge and Cartesian motion plan (ADR-2607151600, superseding

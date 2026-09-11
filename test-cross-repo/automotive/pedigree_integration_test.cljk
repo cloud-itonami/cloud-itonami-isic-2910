@@ -23,7 +23,7 @@
   dependency on isic-2410 is invisible from here -- this alias
   declares isic-2410 itself, one level further back).
 
-  Run with `clojure -M:dev:cross-repo-test` -- kept OUT of the default
+  Run with `kbb -M:dev:cross-repo-test` -- kept OUT of the default
   `:test` alias (this file lives in `test-cross-repo/`, a separate
   source root) because it requires same-org/cross-org sibling
   checkouts a casual fork of just THIS repo would not have. Still no
