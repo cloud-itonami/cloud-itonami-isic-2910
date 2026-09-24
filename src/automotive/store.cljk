@@ -46,7 +46,7 @@
   op/effect needed). Absent on every vehicle that predates this ADR;
   `automotive.governor`'s new check treats its absence as a no-op, so
   this is purely additive on both backends."
-  (:require #?(:clj  [clojure.edn :as edn]
+  (:require #?(:clj  [kotoba.lang.edn :as edn]
                :cljs [cljs.reader :as edn])
             [automotive.registry :as registry]
             [automotive.robotics :as robotics]
