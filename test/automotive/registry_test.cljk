@@ -1,5 +1,5 @@
 (ns automotive.registry-test
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [automotive.registry :as r]))
 
 ;; ----------------------------- vehicle-emissions-out-of-range? -----------------------------
