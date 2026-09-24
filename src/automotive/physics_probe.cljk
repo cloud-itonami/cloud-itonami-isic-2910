@@ -1,0 +1,102 @@
+(ns automotive.physics-probe
+  "The physical-AI bot's measurement: run this actor's REAL
+  `vdesign.simphysics` frontal-crash simulation (`physics-2d` rigid-body
+  vehicle vs immovable barrier at the 56 km/h frontal test speed
+  `vdesign.simverify` carries) over a fixed sweep and print ONE EDN map of
+  the physical quantities it computed.
+
+    kbb -M:dev:physics
+
+  This is what the resident bot (hermes/profiles/physai-isic-2910/SOUL.md)
+  reads every tick. Every number below is derived from a time-stepped
+  trajectory (`automotive.robotics/crash-telemetry-for`, or
+  `vdesign.simphysics/simulate` with only `:impact-mps` overridden for the
+  speed bisection), never typed in. Output schema
+  `itonami.physical-ai.probe.v1`:
+
+    {:physics-probe/schema \"itonami.physical-ai.probe.v1\"
+     :repo :procedure :solver
+     :runs     [{:input {...} :quantities {...} :out-of-tolerance? bool} ...]
+     :derived  {...}   ; quantities computed ACROSS runs
+     :count n :expected n}
+
+  `:count` is an evidence floor: 0 means \"could not measure\", never
+  \"nothing out of tolerance\". Exit 0 when every run produced numbers,
+  2 when any run did not."
+  (:require [automotive.robotics :as robotics]
+            [vdesign.simphysics :as simphysics]
+            [vdesign.simverify :as simverify]))
+
+(def schema "itonami.physical-ai.probe.v1")
+
+(def classes
+  "Every class `vdesign.simverify/geom` defines."
+  [:city :sedan :suv :truck])
+
+(def class-sweep-mass-kg
+  "vehicle-1's seed curb mass (`automotive.store`), held fixed across the
+  class sweep so only the class (crush-zone length) varies."
+  1480.0)
+
+(def sweep-curb-masses-kg
+  "Every curb mass the `automotive.store` seed vehicles carry, swept at
+  :sedan. `automotive.robotics/decel-ceiling-g` claims the reading is
+  mass-independent; this sweep measures that claim every tick."
+  [1150.0 1480.0 2050.0 2200.0 2400.0])
+
+(defn- run-one [vehicle]
+  (let [t (robotics/crash-telemetry-for vehicle)]
+    {:input vehicle
+     :quantities t
+     :out-of-tolerance? (boolean (robotics/crash-simulation-out-of-tolerance? (merge vehicle t)))}))
+
+(defn- decel-g-at [class impact-kmh]
+  (:sim-decel-g (simphysics/simulate (robotics/design-for {:class class :curb-mass-kg class-sweep-mass-kg})
+                                     {:impact-mps (/ (* impact-kmh 1000.0) 3600.0)})))
+
+(defn max-impact-kmh-under-ceiling
+  "Highest impact speed (km/h) at which `class`'s simulated peak
+  deceleration stays at or under `robotics/decel-ceiling-g`, by bisection
+  over the REAL simulation (decel rises with speed at fixed crush length).
+  nil when the bracket does not straddle the ceiling."
+  ([class] (max-impact-kmh-under-ceiling class 1.0 300.0 40))
+  ([class lo hi iters]
+   (let [ceiling robotics/decel-ceiling-g]
+     (when (and (<= (decel-g-at class lo) ceiling) (> (decel-g-at class hi) ceiling))
+       (loop [lo lo hi hi i 0]
+         (if (>= i iters)
+           lo
+           (let [mid (/ (+ lo hi) 2.0)]
+             (if (<= (decel-g-at class mid) ceiling)
+               (recur mid hi (inc i))
+               (recur lo mid (inc i))))))))))
+
+(defn probe []
+  (let [class-runs (mapv #(run-one {:class % :powertrain :bev :curb-mass-kg class-sweep-mass-kg}) classes)
+        mass-runs (mapv #(run-one {:class :sedan :powertrain :bev :curb-mass-kg %}) sweep-curb-masses-kg)
+        runs (into class-runs mass-runs)
+        numeric? (fn [r] (and (number? (get-in r [:quantities :sim-decel-g]))
+                              (number? (get-in r [:quantities :sim-crush-distance-m]))))
+        mass-decels (map #(get-in % [:quantities :sim-decel-g]) mass-runs)]
+    {:physics-probe/schema schema
+     :repo "cloud-itonami/cloud-itonami-isic-2910"
+     :procedure "full-width frontal rigid-barrier crash at 56 km/h (vdesign.simverify impact speed), end-of-line CAE verification cell"
+     :solver "physics-2d/world-step via vdesign.simphysics/simulate"
+     :runs runs
+     :derived {:impact-kmh simverify/impact-kmh
+               :decel-ceiling-g robotics/decel-ceiling-g
+               :classes-over-ceiling (vec (keep #(when (:out-of-tolerance? %) (get-in % [:input :class])) class-runs))
+               ;; max - min peak decel across the curb-mass sweep at :sedan:
+               ;; 0 means mass does not reach the reading.
+               :decel-mass-spread-g (when (every? number? mass-decels)
+                                      (- (reduce max mass-decels) (reduce min mass-decels)))
+               :max-impact-kmh-under-ceiling (into {} (map (juxt identity max-impact-kmh-under-ceiling) classes))}
+     :count (count (filter numeric? runs))
+     :expected (+ (count classes) (count sweep-curb-masses-kg))}))
+
+(defn -main [& _]
+  (let [p (probe)]
+    (prn p)
+    (when-not (= (:count p) (:expected p))
+      #?(:cljs (set! (.-exitCode js/process) 2)
+         :default (System/exit 2)))))
