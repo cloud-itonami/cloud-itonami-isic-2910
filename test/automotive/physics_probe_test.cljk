@@ -1,0 +1,54 @@
+(ns automotive.physics-probe-test
+  "The probe is the bot's only source of \"measured\"; these pin that it
+  measures (every run numeric, count = expected), that the numbers come
+  from the simulation (the derived speed boundary really straddles the
+  ceiling), and that a changed solver would show."
+  (:require [clojure.test :refer [deftest is testing]]
+            [automotive.physics-probe :as probe]
+            [automotive.robotics :as robotics]
+            [vdesign.simphysics :as simphysics]))
+
+(deftest probe-measures-every-run
+  (let [p (probe/probe)]
+    (is (= "itonami.physical-ai.probe.v1" (:physics-probe/schema p)))
+    (is (pos? (:count p)))
+    (is (= (:count p) (:expected p) (count (:runs p))))
+    (testing "every run carries a numeric decel and tick count from the trajectory"
+      (doseq [r (:runs p)]
+        (is (number? (get-in r [:quantities :sim-decel-g])))
+        (is (pos? (get-in r [:quantities :ticks])))))))
+
+(defn- class-runs [p] (take (count probe/classes) (:runs p)))
+
+(deftest decel-falls-as-crush-zone-lengthens
+  (testing "city (0.50 m) > sedan (0.60) > suv (0.65) > truck (0.90)"
+    (let [decels (map #(get-in % [:quantities :sim-decel-g]) (class-runs (probe/probe)))]
+      (is (apply > decels)))))
+
+(deftest only-the-city-class-exceeds-the-ceiling-at-56-kmh
+  (is (= [:city] (get-in (probe/probe) [:derived :classes-over-ceiling]))))
+
+(deftest mass-spread-is-measured-and-matches-the-disclosed-invariance
+  (let [spread (get-in (probe/probe) [:derived :decel-mass-spread-g])]
+    (is (number? spread))
+    (testing "immovable barrier: peak decel does not depend on curb mass"
+      (is (zero? spread)))))
+
+(deftest derived-speed-boundary-straddles-the-ceiling
+  (doseq [class probe/classes]
+    (let [kmh (probe/max-impact-kmh-under-ceiling class)
+          decel (fn [k] (:sim-decel-g (simphysics/simulate
+                                       (robotics/design-for {:class class :curb-mass-kg 1480.0})
+                                       {:impact-mps (/ (* k 1000.0) 3600.0)})))]
+      (is (number? kmh) (str class))
+      (testing "at the boundary the decel is within the ceiling; 1% faster it is not"
+        (is (<= (decel kmh) robotics/decel-ceiling-g))
+        (is (> (decel (* 1.01 kmh)) robotics/decel-ceiling-g))))))
+
+(deftest city-boundary-sits-below-and-sedan-above-the-test-speed
+  (let [b (get-in (probe/probe) [:derived :max-impact-kmh-under-ceiling])]
+    (is (< (:city b) 56.0))
+    (is (> (:sedan b) 56.0))))
+
+(deftest bracket-that-does-not-straddle-answers-nil
+  (is (nil? (probe/max-impact-kmh-under-ceiling :sedan 1.0 10.0 10))))
