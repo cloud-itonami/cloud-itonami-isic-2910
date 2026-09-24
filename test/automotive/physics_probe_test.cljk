@@ -3,7 +3,7 @@
   measures (every run numeric, count = expected), that the numbers come
   from the simulation (the derived speed boundary really straddles the
   ceiling), and that a changed solver would show."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [automotive.physics-probe :as probe]
             [automotive.robotics :as robotics]
             [vdesign.simphysics :as simphysics]))
