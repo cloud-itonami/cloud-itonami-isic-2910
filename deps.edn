@@ -54,9 +54,12 @@ io.github.kotoba-lang/langgraph
         ;; Cartesian assembly-station motion plan -- instead of comparing
         ;; static self-reported fields. physics-2d/org-iso-10303/org-iso-6983/
         ;; cad resolve transitively from this git dep's own deps.edn.
+        ;; Moved into the kotoba monorepo as lib/kotoba.kamiEngineVehicleDesigner
+        ;; (JUN-649); the standalone repo is archived.
         io.github.kotoba-lang/kami-engine-vehicle-designer
-        {:git/url "https://github.com/kotoba-lang/kami-engine-vehicle-designer.git"
-         :git/sha "6b2f8f61013f565fbe285a3d494753d5e6ffb13f"}
+        {:git/url "https://github.com/kotoba-lang/kotoba.git"
+         :git/sha "64ba9e2e6459e7244ca52945b7b010489d07a008"
+         :deps/root "lib/kotoba.kamiEngineVehicleDesigner"}
         ;; Cross-actor supply-chain-linkage contract (ADR-2607999950,
         ;; extended by ADR-2607999960): `automotive.governor`
         ;; independently re-verifies each OPTIONAL entry of
