@@ -8,11 +8,21 @@
         ;; only from nbb.edn, so every project file this repo has names it.
         io.github.kotoba-lang/edn
         {:git/url "https://github.com/kotoba-lang/kotoba.git"
-         :git/sha "7e1dbe0aece831138e6106c59d2b26375d0f60c4"
+         :git/sha "64ba9e2e6459e7244ca52945b7b010489d07a008"
          :deps/root "lib/kotoba.edn"}
        ;; kotoba.test (clojure.test-compatible surface), not clojure.test --
         ;; scripts/migrate-clojure-test-to-kotoba-test.cljk. Explicit floor.
         io.github.kotoba-lang/test
         {:git/url "https://github.com/kotoba-lang/kotoba.git"
-         :git/sha "7e1dbe0aece831138e6106c59d2b26375d0f60c4"
-         :deps/root "lib/kotoba.test"}}}
+         :git/sha "64ba9e2e6459e7244ca52945b7b010489d07a008"
+         :deps/root "lib/kotoba.test"}
+        ;; vdesign.{simphysics,scene,motionplan,simverify} -- required by
+        ;; automotive.robotics / automotive.physics-probe (src/). Same
+        ;; coordinate as deps.edn (ADR-2607151600; lib/kotoba.kamiEngineVehicleDesigner
+        ;; since JUN-649). It does not exist at the older 7e1dbe0a, so every
+        ;; kotoba pin in this file is on 64ba9e2e (one sha per file: the libs
+        ;; reach each other via relative :local/root).
+        io.github.kotoba-lang/kami-engine-vehicle-designer
+        {:git/url "https://github.com/kotoba-lang/kotoba.git"
+         :git/sha "64ba9e2e6459e7244ca52945b7b010489d07a008"
+         :deps/root "lib/kotoba.kamiEngineVehicleDesigner"}}}
